@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HB Mart - Quality Products at Great Prices</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'index' }) %>
+    
+    <!-- Hero Carousel -->
+    <div class="carousel">
+        <div class="carousel-slides">
+            <!-- Slide 1 -->
+            <div class="carousel-slide">
+                <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=400&fit=crop" alt="Weekly Specials">
+                <div class="banner-content">
+                    <h1>Weekly Specials</h1>
+                    <p>Up to 50% off on selected fresh produce and groceries</p>
+                    <% if (user) { %>
+                        <a href="<%= user.role === 'admin' ? '/inventory' : '/shopping' %>" class="btn">Shop Now</a>
+                    <% } else { %>
+                        <a href="/login" class="btn">Shop Now</a>
+                    <% } %>
+                </div>
+            </div>
+            
+            <!-- Slide 2 -->
+            <div class="carousel-slide">
+                <img src="https://images.unsplash.com/photo-1543362906-acfc16c67564?w=1200&h=400&fit=crop" alt="Fresh Produce">
+                <div class="banner-content">
+                    <h1>Fresh From Farm</h1>
+                    <p>Premium quality fruits and vegetables delivered daily</p>
+                    <% if (user) { %>
+                        <a href="<%= user.role === 'admin' ? '/inventory' : '/shopping' %>" class="btn">Explore Fresh</a>
+                    <% } else { %>
+                        <a href="/login" class="btn">Explore Fresh</a>
+                    <% } %>
+                </div>
+            </div>
+            
+            <!-- Slide 3 -->
+            <div class="carousel-slide">
+                <img src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=1200&h=400&fit=crop" alt="Organic Selection">
+                <div class="banner-content">
+                    <h1>Organic Selection</h1>
+                    <p>Healthy choices for your family - 100% organic products</p>
+                    <% if (user) { %>
+                        <a href="<%= user.role === 'admin' ? '/inventory' : '/shopping' %>" class="btn">View Organic</a>
+                    <% } else { %>
+                        <a href="/login" class="btn">View Organic</a>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Carousel Controls -->
+        <button class="carousel-control prev">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="carousel-control next">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        
+        <!-- Carousel Indicators -->
+        <div class="carousel-indicators">
+            <button class="carousel-indicator active" data-index="0"></button>
+            <button class="carousel-indicator" data-index="1"></button>
+            <button class="carousel-indicator" data-index="2"></button>
+        </div>
+    </div>
+    
+    <!-- Welcome Section -->
+    <div class="container">
+        <% if (user) { %>
+            <% if (user.role === 'admin') { %>
+                <div style="text-align: center; padding: 40px 0;">
+                    <h2 class="section-title">Admin Dashboard</h2>
+                    <p style="font-size: 18px; color: var(--dark-gray); margin-bottom: 30px;">
+                        Manage your inventory and view orders
+                    </p>
+                    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                        <a href="/inventory" class="btn btn-primary">
+                            <i class="fas fa-box"></i> Manage Inventory
+                        </a>
+                        <a href="/addProduct" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Add New Product
+                        </a>
+                        <a href="/admin/orders" class="btn btn-secondary">
+                            <i class="fas fa-file-invoice"></i> View All Orders
+                        </a>
+                    </div>
+                </div>
+            <% } else { %>
+                <div style="text-align: center; padding: 40px 0;">
+                    <h2 class="section-title">Welcome Back, <%= user.username %>!</h2>
+                    <p style="font-size: 18px; color: var(--dark-gray); margin-bottom: 30px;">
+                        Ready to shop? Browse our fresh selection of quality products
+                    </p>
+                    <a href="/shopping" class="btn btn-primary" style="font-size: 18px; padding: 15px 40px;">
+                        <i class="fas fa-shopping-basket"></i> Start Shopping
+                    </a>
+                </div>
+            <% } %>
+        <% } else { %>
+            <div style="text-align: center; padding: 40px 0;">
+                <h2 class="section-title">Welcome to HB Mart</h2>
+                <p style="font-size: 18px; color: var(--dark-gray); margin-bottom: 30px;">
+                    Singapore's leading grocery retailer - Quality products at affordable prices
+                </p>
+                <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                    <a href="/login" class="btn btn-primary" style="font-size: 18px; padding: 15px 40px;">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                    <a href="/register" class="btn btn-secondary" style="font-size: 18px; padding: 15px 40px;">
+                        <i class="fas fa-user-plus"></i> Register Now
+                    </a>
+                </div>
+            </div>
+        <% } %>
+    </div>
+    
+    <!-- Services Section -->
+    <section class="services">
+        <div class="container">
+            <div class="services-grid">
+                <div class="service-item">
+                    <div class="service-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <h3 class="service-title">Same Day Delivery</h3>
+                    <p class="service-desc">Order before 12pm for same day delivery</p>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <h3 class="service-title">Click & Collect</h3>
+                    <p class="service-desc">Order online, pick up in store</p>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">
+                        <i class="fas fa-percent"></i>
+                    </div>
+                    <h3 class="service-title">Member Prices</h3>
+                    <p class="service-desc">Exclusive deals for members</p>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <h3 class="service-title">Eco-friendly</h3>
+                    <p class="service-desc">Sustainable packaging options</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <%- include('partials/footer', { user: user }) %>
+    
+    <script src="/js/main.js"></script>
+</body>
+</html>

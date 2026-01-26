@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .orders-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .order-card {
+            background-color: var(--white);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light-gray);
+        }
+        .order-id {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .order-status {
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-unpaid {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-paid {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        .status-processing {
+            background-color: #cfe2ff;
+            color: #084298;
+        }
+        .status-completed {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        .status-cancelled {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+        .order-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .order-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .order-detail-label {
+            font-size: 12px;
+            color: var(--dark-gray);
+            margin-bottom: 5px;
+        }
+        .order-detail-value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'orders' }) %>
+    
+    <!-- Main Content -->
+    <div class="orders-container">
+        <h1 style="margin-bottom: 30px;">
+            <i class="fas fa-receipt"></i> My Orders
+        </h1>
+        
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success">
+                <%= messages.success[0] %>
+            </div>
+        <% } %>
+        
+        <% if (messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error">
+                <%= messages.error[0] %>
+            </div>
+        <% } %>
+        
+        <% if (orders && orders.length > 0) { %>
+            <% orders.forEach(order => { %>
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="order-id">
+                            <i class="fas fa-file-invoice"></i> Order #<%= order.id %>
+                        </div>
+                        <div class="order-status status-<%= (order.status || 'Pending').toLowerCase() %>">
+                            <%= order.status || 'Pending' %>
+                        </div>
+                    </div>
+                    
+                    <div class="order-details">
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">Order Date</span>
+                            <span class="order-detail-value">
+                                <%= new Date(order.created_at).toLocaleDateString('en-SG', { 
+                                    year: 'numeric', 
+                                    month: 'short', 
+                                    day: 'numeric' 
+                                }) %>
+                            </span>
+                        </div>
+                        
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">Total Amount</span>
+                            <span class="order-detail-value" style="color: var(--primary);">
+                                <% const orderSubtotal = Number(order.total) || 0; %>
+                                <% const orderDeliveryFee = orderSubtotal >= 60 ? 0 : 5; %>
+                                $<%= (orderSubtotal + orderDeliveryFee).toFixed(2) %>
+                            </span>
+                        </div>
+                        
+                        <div class="order-detail-item">
+                            <span class="order-detail-label">Items</span>
+                            <span class="order-detail-value">
+                                <%= order.item_count || 0 %> item(s)
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <a href="/order/<%= order.id %>" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                        <% if ((order.status || '').toString().toLowerCase() === 'unpaid') { %>
+                            <a href="/order/<%= order.id %>/pay" class="btn btn-sm">
+                                <i class="fas fa-credit-card"></i> Pay Now
+                            </a>
+                        <% } %>
+                        <a href="/order/<%= order.id %>/print" class="btn btn-sm" style="background-color: #198754; border-color: #198754;">
+                            <i class="fas fa-print"></i> Print
+                        </a>
+                        <a href="/order/<%= order.id %>/pdf" class="btn btn-sm" style="background-color: #dc3545; border-color: #dc3545;">
+                            <i class="fas fa-file-pdf"></i> Download PDF
+                        </a>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div style="text-align: center; padding: 80px 20px;">
+                <i class="fas fa-receipt" style="font-size: 80px; color: var(--dark-gray); margin-bottom: 20px;"></i>
+                <h2 style="color: var(--text-dark); margin-bottom: 15px;">No orders yet</h2>
+                <p style="color: var(--dark-gray); margin-bottom: 30px; font-size: 18px;">
+                    Start shopping to create your first order
+                </p>
+                <a href="/shopping" class="btn" style="font-size: 18px; padding: 15px 40px;">
+                    <i class="fas fa-shopping-basket"></i> Start Shopping
+                </a>
+            </div>
+        <% } %>
+    </div>
+    
+    <%- include('partials/footer', { user: user }) %>
+    
+    <script src="/js/main.js"></script>
+</body>
+</html>

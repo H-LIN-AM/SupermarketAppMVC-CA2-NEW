@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Payment - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .pay-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .card {
+            background-color: var(--white);
+            border-radius: 8px;
+            padding: 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .payment-options {
+            display: grid;
+            gap: 10px;
+        }
+        .payment-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .payment-option:hover {
+            border-color: var(--primary);
+            background: rgba(102, 126, 234, 0.06);
+        }
+        .payment-option input {
+            margin: 0;
+            width: 18px;
+            height: 18px;
+        }
+        .payment-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+        }
+        .payment-badge.alipay { background: #1677ff; }
+        .payment-badge.paypal { background: #003087; }
+        .payment-badge.nets { background: #e11d48; }
+        .kv {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 10px 16px;
+            align-items: center;
+        }
+        .kv .k { color: var(--dark-gray); font-size: 12px; }
+        .kv .v { font-weight: 600; }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+        .status-badge.pending { background: rgba(245, 158, 11, 0.12); color: #92400e; }
+        .status-badge.paid { background: rgba(16, 185, 129, 0.12); color: #065f46; }
+        .status-badge.error { background: rgba(239, 68, 68, 0.12); color: #991b1b; }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'orders' }) %>
+
+    <div class="pay-container">
+        <div style="margin-bottom: 18px;">
+            <a href="/order/<%= order.id %>" style="color: var(--primary); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Back to Order
+            </a>
+        </div>
+
+        <h1 style="margin-bottom: 18px;">
+            <i class="fas fa-credit-card"></i> Pay Order #<%= order.id %>
+        </h1>
+
+        <% if (messages && messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+        <% if (messages && messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error"><%= messages.error[0] %></div>
+        <% } %>
+
+        <div class="card">
+            <div class="kv">
+                <% const orderSubtotal = Number(order.total) || 0; %>
+                <% const orderDeliveryFee = orderSubtotal >= 60 ? 0 : 5; %>
+                <% const orderPayableTotal = orderSubtotal + orderDeliveryFee; %>
+                <div class="k">Amount</div>
+                <div class="v" style="font-size: 20px; color: var(--primary);">$<%= orderPayableTotal.toFixed(2) %></div>
+                <div class="k">Status</div>
+                <div class="v"><%= order.status || 'Pending' %></div>
+            </div>
+        </div>
+
+        <div class="card" id="payFormPane">
+            <h3 style="margin-bottom: 14px;">Choose Payment Method</h3>
+            <form id="payForm" action="/order/<%= order.id %>/pay/start" method="POST">
+                <div class="payment-options" style="margin-bottom: 16px;">
+                    <label class="payment-option" for="payment-alipay">
+                        <input id="payment-alipay" type="radio" name="paymentMethod" value="alipay" checked required>
+                        <span class="payment-badge alipay">Alipay</span>
+                        <span style="font-weight: 600;">Alipay</span>
+                    </label>
+                    <label class="payment-option" for="payment-paypal">
+                        <input id="payment-paypal" type="radio" name="paymentMethod" value="paypal" required>
+                        <span class="payment-badge paypal">PayPal</span>
+                        <span style="font-weight: 600;">PayPal</span>
+                    </label>
+                    <label class="payment-option" for="payment-nets">
+                        <input id="payment-nets" type="radio" name="paymentMethod" value="nets" required>
+                        <span class="payment-badge nets">NETS</span>
+                        <span style="font-weight: 600;">NETS QR</span>
+                    </label>
+                </div>
+
+                <div id="payFormError" style="display:none; background: rgba(239, 68, 68, 0.10); color: #991b1b; padding: 10px 12px; border-radius: 10px; font-weight: 700;"></div>
+
+                <div style="display:flex; gap: 10px; justify-content:flex-end;">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-arrow-right"></i> Start Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card" id="payPendingPane" style="display:none;">
+            <h3 style="margin-bottom: 14px;">Waiting for Payment</h3>
+            <div class="kv" style="margin-bottom: 16px;">
+                <div class="k">Out Trade No</div>
+                <div class="v" id="outTradeNo">-</div>
+                <div class="k">Method</div>
+                <div class="v" id="payMethod">-</div>
+            </div>
+
+            <div id="payStatus" class="status-badge pending" style="margin-bottom: 16px;">
+                <i class="fas fa-hourglass-half"></i> <span id="payStatusText">Preparing payment...</span>
+            </div>
+
+            <div style="display:flex; gap: 10px; flex-wrap: wrap;">
+                <a class="btn btn-secondary" href="/order/<%= order.id %>">
+                    <i class="fas fa-file-invoice"></i> View Order
+                </a>
+                <button class="btn btn-secondary" type="button" onclick="reopenPaymentTab()">
+                    <i class="fas fa-external-link-alt"></i> Open Payment Again
+                </button>
+                <button class="btn" type="button" onclick="checkNow()">
+                    <i class="fas fa-sync"></i> Check Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+
+    <script>
+        const payFormEl = document.getElementById('payForm');
+        const payFormPaneEl = document.getElementById('payFormPane');
+        const payPendingPaneEl = document.getElementById('payPendingPane');
+        const payFormErrorEl = document.getElementById('payFormError');
+
+        const outTradeNoEl = document.getElementById('outTradeNo');
+        const payMethodEl = document.getElementById('payMethod');
+        const payStatusEl = document.getElementById('payStatus');
+        const payStatusTextEl = document.getElementById('payStatusText');
+
+        let payOutTradeNo = null;
+        let payUrl = null;
+        let payMethod = null;
+        let pollTimer = null;
+        let sse = null;
+        let consecutiveErrors = 0;
+
+        function setStatus(text, type) {
+            payStatusTextEl.textContent = text;
+            payStatusEl.classList.remove('pending', 'paid', 'error');
+            payStatusEl.classList.add(type);
+        }
+
+        function showError(text) {
+            payFormErrorEl.textContent = text;
+            payFormErrorEl.style.display = 'block';
+        }
+
+        function stopPolling() {
+            if (pollTimer) {
+                clearInterval(pollTimer);
+                pollTimer = null;
+            }
+            if (sse) {
+                try { sse.close(); } catch (e) {}
+                sse = null;
+            }
+        }
+
+        function reopenPaymentTab() {
+            if (!payUrl) return;
+            window.open(payUrl, '_blank', 'noopener');
+        }
+
+        async function checkNow() {
+            if (!payOutTradeNo) return;
+
+            try {
+                const resp = await fetch(`/order/<%= order.id %>/pay/status?out_trade_no=${encodeURIComponent(payOutTradeNo)}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await resp.json();
+                if (!data || !data.ok) {
+                    consecutiveErrors += 1;
+                    setStatus((data && data.error) ? data.error : 'Failed to check status', 'error');
+                    return;
+                }
+
+                consecutiveErrors = 0;
+                if (data.paid) {
+                    stopPolling();
+                    setStatus('Payment successful. Updating order...', 'paid');
+                    if (payMethod === 'paypal' || payMethod === 'nets') {
+                        window.location.href = `/order/<%= order.id %>`;
+                    } else {
+                        window.location.href = `/order/<%= order.id %>/pay/finish?out_trade_no=${encodeURIComponent(payOutTradeNo)}`;
+                    }
+                    return;
+                }
+
+                const providerStatus = data.tradeStatus || data.orderStatus || data.txnStatus || data.actionCode || null;
+                const statusText = providerStatus ? ` (${providerStatus})` : '';
+                setStatus(`Waiting for payment...${statusText}`, 'pending');
+            } catch (e) {
+                consecutiveErrors += 1;
+                setStatus('Network error while checking status', 'error');
+            }
+        }
+
+        function showPendingPane(outTradeNo, method, url) {
+            payOutTradeNo = outTradeNo;
+            payMethod = method;
+            payUrl = url;
+
+            outTradeNoEl.textContent = outTradeNo;
+            payMethodEl.textContent = method.toUpperCase();
+
+            payFormPaneEl.style.display = 'none';
+            payPendingPaneEl.style.display = 'block';
+        }
+
+        (function initFromReturn() {
+            const sp = new URLSearchParams(window.location.search);
+            const outTradeNo = (sp.get('out_trade_no') || '').trim();
+            const pm = (sp.get('pm') || '').trim().toLowerCase();
+            const canceled = (sp.get('cancel') || '').trim().toLowerCase();
+
+            if (canceled === 'paypal') {
+                showError('PayPal payment was cancelled.');
+                return;
+            }
+
+            if (!outTradeNo) return;
+            if (pm !== 'paypal' && pm !== 'alipay' && pm !== 'nets') return;
+
+            showPendingPane(outTradeNo, pm, null);
+            setStatus('Checking payment status...', 'pending');
+            startFallbackPolling();
+        })();
+
+        function startFallbackPolling() {
+            stopPolling();
+            pollTimer = setInterval(() => {
+                if (consecutiveErrors >= 5) return;
+                checkNow();
+            }, 2000);
+            checkNow();
+        }
+
+        payFormEl.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            payFormErrorEl.style.display = 'none';
+            payFormErrorEl.textContent = '';
+
+            const methodEl = payFormEl.querySelector('input[name="paymentMethod"]:checked');
+            const method = methodEl ? methodEl.value : null;
+            if (method !== 'alipay' && method !== 'paypal' && method !== 'nets') return;
+
+            try {
+                const resp = await fetch(`/order/<%= order.id %>/pay/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        'Accept': 'application/json'
+                    },
+                    body: new URLSearchParams({ paymentMethod: method })
+                });
+
+                const data = await resp.json();
+                if (!data || !data.ok) {
+                    showError((data && data.error) ? data.error : 'Failed to create payment');
+                    return;
+                }
+
+                if (data.alreadyPaid) {
+                    window.location.href = `/order/<%= order.id %>`;
+                    return;
+                }
+
+                showPendingPane(data.outTradeNo, method, data.url);
+
+                const opened = window.open(data.url, '_blank', 'noopener');
+                if (!opened) {
+                    setStatus('Popup blocked. Click "Open Payment Again". We will keep checking.', 'error');
+                } else {
+                    setStatus('Please complete payment in the new tab. We are checking status...', 'pending');
+                }
+
+                consecutiveErrors = 0;
+                stopPolling();
+
+                if (method === 'nets' && data.sseUrl) {
+                    try {
+                        sse = new EventSource(data.sseUrl);
+                        sse.onmessage = (evt) => {
+                            let payload = null;
+                            try { payload = evt && evt.data ? JSON.parse(evt.data) : null; } catch (e) {}
+                            if (payload && payload.success) {
+                                stopPolling();
+                                setStatus('Payment successful. Updating order...', 'paid');
+                                window.location.href = `/order/<%= order.id %>`;
+                                return;
+                            }
+                            if (payload && payload.fail) {
+                                stopPolling();
+                                setStatus('Payment failed or timed out. Please try again.', 'error');
+                                return;
+                            }
+
+                            const dataObj = payload && payload.result && payload.result.responseCode ? payload.result : null;
+                            const statusText = dataObj ? ` (code:${dataObj.responseCode}, status:${dataObj.txnStatus})` : '';
+                            setStatus(`Waiting for payment...${statusText}`, 'pending');
+                        };
+                        sse.onerror = () => {
+                            try { sse.close(); } catch (e) {}
+                            sse = null;
+                            startFallbackPolling();
+                        };
+                    } catch (e) {
+                        startFallbackPolling();
+                    }
+                } else {
+                    startFallbackPolling();
+                }
+            } catch (e2) {
+                showError('Network error while creating payment');
+            }
+        });
+    </script>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

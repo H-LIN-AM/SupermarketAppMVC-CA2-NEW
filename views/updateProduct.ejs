@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Product - HB Mart Admin</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .form-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .form-card {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        .form-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+        .form-header i {
+            font-size: 48px;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        .form-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+        .current-image-preview {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--light-gray);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .current-image-preview img {
+            max-width: 200px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'updateProduct', pageTitle: 'Update Product' }) %>
+    
+    <!-- Main Content -->
+    <div class="form-container">
+        <div style="margin-bottom: 30px;">
+            <a href="/inventory" style="color: var(--primary); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Back to Inventory
+            </a>
+        </div>
+        
+        <% if (product) { %>
+            <div class="form-card">
+                <div class="form-header">
+                    <i class="fas fa-edit"></i>
+                    <h1>Update Product</h1>
+                    <p>Edit product details for: <strong><%= product.productName %></strong></p>
+                </div>
+                
+                <form action="/updateProduct/<%= product.id %>" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="name">
+                            <i class="fas fa-tag"></i> Product Name
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="<%= product.productName %>" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">
+                            <i class="fas fa-list"></i> Category
+                        </label>
+                        <select class="form-control" id="category" name="category" required>
+                            <option value="Fresh Food" <%= product.category === 'Fresh Food' ? 'selected' : '' %>>Fresh Food</option>
+                            <option value="Pantry" <%= product.category === 'Pantry' ? 'selected' : '' %>>Pantry</option>
+                            <option value="Snacks" <%= product.category === 'Snacks' ? 'selected' : '' %>>Snacks</option>
+                            <option value="Beverages" <%= product.category === 'Beverages' ? 'selected' : '' %>>Beverages</option>
+                            <option value="Household" <%= product.category === 'Household' ? 'selected' : '' %>>Household</option>
+                            <option value="Personal Care" <%= product.category === 'Personal Care' ? 'selected' : '' %>>Personal Care</option>
+                            <option value="General" <%= product.category === 'General' || !product.category ? 'selected' : '' %>>General</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label for="quantity">
+                                <i class="fas fa-box"></i> Stock Quantity
+                            </label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   min="0" step="1" value="<%= product.quantity %>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="price">
+                                <i class="fas fa-dollar-sign"></i> Price ($)
+                            </label>
+                            <input type="number" class="form-control" id="price" name="price" 
+                                   min="0" step="0.01" value="<%= product.price %>" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-image"></i> Current Product Image
+                        </label>
+                        <div class="current-image-preview">
+                            <img src="/images/<%= product.image %>" alt="<%= product.productName %>"
+                                 onerror="this.src='https://via.placeholder.com/200x200?text=No+Image'">
+                            <p style="margin-top: 10px; color: var(--dark-gray); font-size: 14px;">
+                                <%= product.image %>
+                            </p>
+                        </div>
+                        <input type="hidden" name="currentImage" value="<%= product.image %>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="image">
+                            <i class="fas fa-upload"></i> Upload New Image (Optional)
+                        </label>
+                        <input class="form-control" type="file" id="image" name="image" accept="image/*">
+                        <small style="color: var(--dark-gray); display: block; margin-top: 8px;">
+                            Leave empty to keep the current image
+                        </small>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px;">
+                        <a href="/inventory" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn">
+                            <i class="fas fa-save"></i> Update Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        <% } else { %>
+            <div style="text-align: center; padding: 80px 20px;">
+                <i class="fas fa-exclamation-circle" style="font-size: 80px; color: var(--dark-gray); margin-bottom: 20px;"></i>
+                <h2 style="color: var(--text-dark);">Product Not Found</h2>
+                <p style="color: var(--dark-gray); font-size: 18px;">The product you're trying to edit doesn't exist.</p>
+                <a href="/inventory" class="btn" style="margin-top: 20px;">
+                    <i class="fas fa-arrow-left"></i> Back to Inventory
+                </a>
+            </div>
+        <% } %>
+    </div>
+    
+    <%- include('partials/footer', { user: user }) %>
+    
+    <script src="/js/main.js"></script>
+</body>
+</html>

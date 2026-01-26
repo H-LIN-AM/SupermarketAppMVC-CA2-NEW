@@ -1,0 +1,103 @@
+<!-- Header Top -->
+<header class="header-top">
+    <div class="header-top-content">
+        <div class="header-top-text">
+           <% if (user && user.role === 'admin') { %>
+                Admin Panel - <%= typeof pageTitle !== 'undefined' ? pageTitle : 'Dashboard' %>
+            <% } else { %>
+                Free delivery on orders over $60 | Same-day delivery available
+            <% } %>
+
+        </div>
+        <div class="header-top-links">
+            <% if (user) { %>
+                <span>Welcome, <%= user.username %>!</span>
+            <% } else { %>
+                <a href="/register">Sign Up</a>
+                <a href="/login">Sign In</a>
+            <% } %>
+        </div>
+    </div>
+</header>
+
+<!-- Main Header -->
+<header class="header-main">
+    <div class="header-main-content">
+        <a href="/" class="logo">
+            <% if (user && user.role === 'admin') { %>
+                HB Mart Admin
+            <% } else { %>
+                HB Mart
+            <% } %>
+        </a>
+        
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search for products..." id="searchInput">
+        </div>
+        
+        <div class="nav-links">
+            <% if (user) { %>
+                <% if (user.role === 'admin') { %>
+                    <a href="/inventory" <%= currentPage === 'inventory' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-box"></i>
+                        <span>Inventory</span>
+                    </a>
+                    <a href="/admin/orders" <%= currentPage === 'adminOrders' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-file-invoice"></i>
+                        <span>Orders</span>
+                    </a>
+                    <a href="/admin/users" <%= currentPage === 'users' || currentPage === 'createAdmin' || currentPage === 'editUser' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-users-cog"></i>
+                        <span>Users</span>
+                    </a>
+                    <a href="/addProduct" <%= currentPage === 'addProduct' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-plus"></i>
+                        <span>Add Product</span>
+                    </a>
+                <% } else { %>
+                    <a href="/shopping" <%= currentPage === 'shopping' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-store"></i>
+                        <span>Shop</span>
+                    </a>
+                    <a href="/orders" <%= currentPage === 'orders' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-receipt"></i>
+                        <span>My Orders</span>
+                    </a>
+                    <a href="/cart" <%= currentPage === 'cart' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Cart</span>
+                    </a>
+                <% } %>
+                <a href="/logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            <% } else { %>
+                <a href="/login">
+                    <i class="fas fa-user"></i>
+                    <span>Account</span>
+                </a>
+            <% } %>
+        </div>
+    </div>
+</header>
+
+<% if (!user || user.role !== 'admin') { %>
+<!-- Category Navigation (only for regular users and guests) -->
+<nav class="category-nav">
+    <div class="category-nav-content">
+        <ul>
+            <li><a href="/shopping" class="<%= currentPage === 'shopping' || currentPage === 'index' ? 'active' : '' %>">All Products</a></li>
+            <li><a href="#" data-category="Fresh Food">Fresh Food</a></li>
+            <li><a href="#" data-category="Pantry">Pantry</a></li>
+            <li><a href="#" data-category="Snacks">Snacks & Confections</a></li>
+            <li><a href="#" data-category="Beverages">Beverages</a></li>
+            <li><a href="#" data-category="Household">Household</a></li>
+            <li><a href="#" data-category="Personal Care">Personal Care</a></li>
+            <li><a href="#" data-category="Health">Health</a></li>
+            <li><a href="#">Promotions</a></li>
+        </ul>
+    </div>
+</nav>
+<% } %>

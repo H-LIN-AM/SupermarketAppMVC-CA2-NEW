@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NETS Pay - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 26px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+        .sub {
+            color: var(--dark-gray);
+            margin-bottom: 16px;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            gap: 10px 14px;
+            align-items: center;
+            padding: 10px 0;
+            border-top: 1px solid var(--light-gray);
+        }
+        .row:first-of-type {
+            border-top: none;
+        }
+        .label {
+            color: var(--dark-gray);
+            font-size: 12px;
+        }
+        .value {
+            font-weight: 700;
+            word-break: break-all;
+        }
+        .status {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-weight: 800;
+            background: rgba(245, 158, 11, 0.12);
+            color: #92400e;
+        }
+        .status.paid {
+            background: rgba(16, 185, 129, 0.12);
+            color: #065f46;
+        }
+        .status.error {
+            background: rgba(239, 68, 68, 0.12);
+            color: #991b1b;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .btn-secondary {
+            background: white;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'orders' }) %>
+    <div class="page">
+        <div class="card">
+            <div class="title">Scan to Pay (NETS QR)</div>
+            <p class="sub">Use your NETS app to scan this QR code. You can close this tab after payment.</p>
+
+            <div class="row">
+                <div class="label">Order</div>
+                <div class="value">#<%= order.id %></div>
+            </div>
+            <div class="row">
+                <div class="label">Out Trade No</div>
+                <div class="value"><%= outTradeNo %></div>
+            </div>
+            <div class="row">
+                <div class="label">Amount</div>
+                <div class="value">$<%= amount %></div>
+            </div>
+            <div class="row">
+                <div class="label">Txn Retrieval Ref</div>
+                <div class="value"><%= txnRetrievalRef %></div>
+            </div>
+
+            <div style="display:flex;justify-content:center;padding:18px 0 6px 0;">
+                <img src="<%= qrCodeUrl %>" alt="NETS QR Code" style="width:260px;height:260px;border-radius:12px;border:2px solid #e0e0e0;" />
+            </div>
+
+            <div id="payStatus" class="status">Waiting for scan...</div>
+
+            <div class="actions">
+                <a class="btn btn-secondary" href="/order/<%= order.id %>/pay">Back to Pay Page</a>
+                <button class="btn" type="button" onclick="checkNow()">
+                    <i class="fas fa-sync"></i> Check Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+
+    <script>
+        const outTradeNo = "<%= outTradeNo %>";
+        const sseUrl = "<%= sseUrl %>";
+
+        let sse = null;
+        let pollTimer = null;
+        let consecutiveErrors = 0;
+
+        function setStatus(text, type) {
+            const el = document.getElementById('payStatus');
+            el.textContent = text;
+            el.classList.remove('paid', 'error');
+            if (type === 'paid') el.classList.add('paid');
+            if (type === 'error') el.classList.add('error');
+        }
+
+        async function checkNow() {
+            try {
+                const resp = await fetch(`/order/<%= order.id %>/pay/status?out_trade_no=${encodeURIComponent(outTradeNo)}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await resp.json();
+                if (!data || !data.ok) {
+                    consecutiveErrors += 1;
+                    setStatus((data && data.error) ? data.error : 'Failed to check status', 'error');
+                    return;
+                }
+                consecutiveErrors = 0;
+                if (data.paid) {
+                    setStatus('Payment successful. You can close this tab now.', 'paid');
+                    window.location.href = `/order/<%= order.id %>`;
+                    return;
+                }
+                const statusText = (data.responseCode && data.txnStatus) ? ` (code:${data.responseCode}, status:${data.txnStatus})` : '';
+                setStatus(`Waiting for payment...${statusText}`, 'pending');
+            } catch (e) {
+                consecutiveErrors += 1;
+                setStatus('Network error while checking status', 'error');
+            }
+        }
+
+        function startSse() {
+            if (!sseUrl) return;
+            try {
+                sse = new EventSource(sseUrl);
+                sse.onmessage = (evt) => {
+                    let payload = null;
+                    try { payload = evt && evt.data ? JSON.parse(evt.data) : null; } catch (e) {}
+
+                    if (payload && payload.success) {
+                        setStatus('Payment successful. You can close this tab now.', 'paid');
+                        try { sse.close(); } catch (e) {}
+                        sse = null;
+                        window.location.href = `/order/<%= order.id %>`;
+                        return;
+                    }
+
+                    if (payload && payload.fail) {
+                        setStatus('Live status ended. Please go back and retry.', 'error');
+                        try { sse.close(); } catch (e) {}
+                        sse = null;
+                        return;
+                    }
+
+                    const dataObj = payload && payload.result ? payload.result : null;
+                    const statusText = dataObj && dataObj.responseCode ? ` (code:${dataObj.responseCode}, status:${dataObj.txnStatus})` : '';
+                    setStatus(`Waiting for payment...${statusText}`, 'pending');
+                };
+                sse.onerror = () => {
+                    try { sse.close(); } catch (e) {}
+                    sse = null;
+                    pollTimer = setInterval(() => {
+                        if (consecutiveErrors >= 5) return;
+                        checkNow();
+                    }, 2000);
+                };
+            } catch (e) {
+                pollTimer = setInterval(() => {
+                    if (consecutiveErrors >= 5) return;
+                    checkNow();
+                }, 2000);
+            }
+        }
+
+        startSse();
+        checkNow();
+    </script>
+    <script src="/js/main.js"></script>
+</body>
+</html>
