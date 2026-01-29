@@ -69,6 +69,73 @@ function create(userId, total, items, callback) {
 }
 
 /**
+ * Create new order with voucher support
+ * @param {Number} userId - User ID
+ * @param {Number} total - Order total price (after discount)
+ * @param {Array} items - Order items array
+ * @param {Object} voucherData - Voucher validation result {voucher, discount}
+ * @param {Function} callback - Callback function (err, result)
+ */
+function createWithVoucher(userId, total, items, voucherData, callback) {
+    console.log('Order.createWithVoucher called with:', { userId, total, itemCount: items.length, hasVoucher: !!voucherData });
+
+    const voucherId = voucherData && voucherData.voucher ? voucherData.voucher.id : null;
+    const voucherCode = voucherData && voucherData.voucher ? voucherData.voucher.code : null;
+    const discountAmount = voucherData ? voucherData.discount : 0;
+
+    // Calculate subtotal (before discount)
+    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const deliveryFee = subtotal >= 60 ? 0 : 5;
+    const finalTotal = subtotal + deliveryFee - discountAmount;
+
+    // Insert main order record with voucher info
+    const orderSql = `
+        INSERT INTO orders (user_id, total, voucher_id, voucher_code, discount_amount, final_total, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, NOW())
+    `;
+
+    db.query(orderSql, [userId, subtotal, voucherId, voucherCode, discountAmount, finalTotal], (err, result) => {
+        if (err) {
+            console.error('Error inserting order:', err);
+            return callback(err);
+        }
+
+        const orderId = result.insertId;
+        console.log('Order created with ID:', orderId);
+
+        // Insert order items
+        if (items && items.length > 0) {
+            const itemsValues = items.map(item => [
+                orderId,
+                item.productId,
+                item.productName || 'Unknown Product',
+                item.price,
+                item.quantity
+            ]);
+
+            const itemsSql = 'INSERT INTO order_items (order_id, product_id, product_name, price, quantity) VALUES ?';
+            db.query(itemsSql, [itemsValues], (err) => {
+                if (err) {
+                    console.error('Error inserting order items:', err);
+                    return callback(err);
+                }
+
+                updateProductStock(items, (stockErr) => {
+                    if (stockErr) {
+                        console.error('Error updating product stock:', stockErr);
+                        return callback(stockErr);
+                    }
+
+                    callback(null, { orderId, insertId: orderId });
+                });
+            });
+        } else {
+            callback(null, { orderId, insertId: orderId });
+        }
+    });
+}
+
+/**
  * Update product stock based on items in an order.
  * @param {Array} items - Order items array
  * @param {Function} callback - Callback function (err)
@@ -255,6 +322,7 @@ function deleteById(orderId, callback) {
 // ========================================
 module.exports = {
     create,          // Create order
+    createWithVoucher, // Create order with voucher
     getByUserId,     // Get user orders
     getAll,          // Get all orders
     getById,         // Get order details

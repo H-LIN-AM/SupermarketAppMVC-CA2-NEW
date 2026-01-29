@@ -51,6 +51,23 @@
                         <i class="fas fa-users-cog"></i>
                         <span>Users</span>
                     </a>
+                    <a href="/admin/membership/plans" <%= currentPage === 'admin' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-crown"></i>
+                        <span>Membership</span>
+                    </a>
+                    <a href="/admin/vouchers" <%= currentPage === 'adminVouchers' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-ticket-alt"></i>
+                        <span>Vouchers</span>
+                    </a>
+                    <!-- [NEW] Shipments and Refunds admin links -->
+                    <a href="/admin/shipments" <%= currentPage === 'adminShipments' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-shipping-fast"></i>
+                        <span>Shipments</span>
+                    </a>
+                    <a href="/admin/refunds" <%= currentPage === 'adminRefunds' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-undo"></i>
+                        <span>Refunds</span>
+                    </a>
                     <a href="/addProduct" <%= currentPage === 'addProduct' ? 'style="color: var(--primary);"' : '' %>>
                         <i class="fas fa-plus"></i>
                         <span>Add Product</span>
@@ -60,9 +77,26 @@
                         <i class="fas fa-store"></i>
                         <span>Shop</span>
                     </a>
+                    <a href="/membership" <%= currentPage === 'membership' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-crown"></i>
+                        <span>Membership</span>
+                    </a>
+                    <a href="/vouchers" <%= currentPage === 'vouchers' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-ticket-alt"></i>
+                        <span>Vouchers</span>
+                    </a>
                     <a href="/orders" <%= currentPage === 'orders' ? 'style="color: var(--primary);"' : '' %>>
                         <i class="fas fa-receipt"></i>
                         <span>My Orders</span>
+                    </a>
+                    <!-- [NEW] Shipments and Refunds user links -->
+                    <a href="/shipments" <%= currentPage === 'shipments' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-truck"></i>
+                        <span>Shipments</span>
+                    </a>
+                    <a href="/refunds" <%= currentPage === 'refunds' ? 'style="color: var(--primary);"' : '' %>>
+                        <i class="fas fa-undo"></i>
+                        <span>Refunds</span>
                     </a>
                     <a href="/cart" <%= currentPage === 'cart' ? 'style="color: var(--primary);"' : '' %>>
                         <i class="fas fa-shopping-cart"></i>

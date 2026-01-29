@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Refunds - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- [NEW FILE] User refund requests list -->
+    <style>
+        .refunds-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .refund-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .refund-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light-gray);
+        }
+        .status-badge {
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .status-badge.approved { background: #cfe2ff; color: #084298; }
+        .status-badge.rejected { background: #f8d7da; color: #842029; }
+        .status-badge.completed { background: #d1e7dd; color: #0f5132; }
+        .status-badge.cancelled { background: #e2e3e5; color: #383d41; }
+        .refund-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .detail-label {
+            font-size: 12px;
+            color: var(--dark-gray);
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--dark-gray);
+        }
+        .empty-state i {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'refunds' }) %>
+
+    <div class="refunds-container">
+        <h1 style="margin-bottom: 30px;">
+            <i class="fas fa-undo"></i> My Refund Requests
+        </h1>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+        <% if (messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error"><%= messages.error[0] %></div>
+        <% } %>
+
+        <% if (refunds && refunds.length > 0) { %>
+            <% refunds.forEach(refund => { %>
+                <div class="refund-card">
+                    <div class="refund-header">
+                        <div>
+                            <strong>Refund #<%= refund.id %></strong>
+                            <span style="color: var(--dark-gray); margin-left: 10px;">
+                                for Order <a href="/order/<%= refund.order_id %>">#<%= refund.order_id %></a>
+                            </span>
+                        </div>
+                        <span class="status-badge <%= refund.status.toLowerCase() %>">
+                            <%= refund.status %>
+                        </span>
+                    </div>
+
+                    <div class="refund-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Amount</span>
+                            <span class="detail-value" style="color: var(--primary);">$<%= parseFloat(refund.amount).toFixed(2) %></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Reason</span>
+                            <span class="detail-value"><%= refund.reason %></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Requested</span>
+                            <span class="detail-value"><%= new Date(refund.requested_at).toLocaleDateString('en-SG') %></span>
+                        </div>
+                        <% if (refund.processed_at) { %>
+                            <div class="detail-item">
+                                <span class="detail-label">Processed</span>
+                                <span class="detail-value"><%= new Date(refund.processed_at).toLocaleDateString('en-SG') %></span>
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <% if (refund.description) { %>
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--light-gray);">
+                            <div class="detail-label">Description</div>
+                            <p style="margin: 5px 0;"><%= refund.description %></p>
+                        </div>
+                    <% } %>
+
+                    <% if (refund.admin_note) { %>
+                        <div style="margin-top: 15px; padding: 15px; background: var(--light-gray); border-radius: 6px;">
+                            <div class="detail-label">Admin Response</div>
+                            <p style="margin: 5px 0;"><%= refund.admin_note %></p>
+                        </div>
+                    <% } %>
+
+                    <% if (refund.status === 'Pending') { %>
+                        <div style="margin-top: 15px; text-align: right;">
+                            <a href="/refund/<%= refund.id %>/cancel" class="btn btn-sm" style="background: #dc3545;"
+                               onclick="return confirm('Cancel this refund request?')">
+                                <i class="fas fa-times"></i> Cancel Request
+                            </a>
+                        </div>
+                    <% } %>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div class="empty-state">
+                <i class="fas fa-undo"></i>
+                <h2>No Refund Requests</h2>
+                <p>You haven't made any refund requests yet.</p>
+            </div>
+        <% } %>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

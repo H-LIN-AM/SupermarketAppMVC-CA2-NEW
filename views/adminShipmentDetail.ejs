@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipment Details - HB Mart Admin</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- [NEW FILE] Admin shipment detail page -->
+    <style>
+        .detail-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .detail-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        .status-badge.processing { background: #fff3cd; color: #856404; }
+        .status-badge.shipped { background: #cfe2ff; color: #084298; }
+        .status-badge.in-transit { background: #d1e7ff; color: #0a58ca; }
+        .status-badge.out-for-delivery { background: #d1e7dd; color: #0f5132; }
+        .status-badge.delivered { background: #198754; color: white; }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--light-gray);
+            border-radius: 6px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--light-gray);
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'admin' }) %>
+
+    <div class="detail-container">
+        <div style="margin-bottom: 20px;">
+            <a href="/admin/shipments" style="color: var(--primary); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Back to Shipments
+            </a>
+        </div>
+
+        <h1 style="margin-bottom: 30px;">
+            <i class="fas fa-truck"></i> Shipment #<%= shipment.id %>
+        </h1>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+        <% if (messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error"><%= messages.error[0] %></div>
+        <% } %>
+
+        <!-- Shipment Info -->
+        <div class="detail-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3><i class="fas fa-info-circle"></i> Shipment Information</h3>
+                <span class="status-badge <%= shipment.status.toLowerCase().replace(/ /g, '-') %>">
+                    <%= shipment.status %>
+                </span>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <div style="font-size: 12px; color: var(--dark-gray);">Tracking Number</div>
+                    <div style="font-family: monospace; font-size: 18px; font-weight: bold; color: var(--primary);">
+                        <%= shipment.tracking_number %>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 12px; color: var(--dark-gray);">Order</div>
+                    <div><a href="/order/<%= shipment.order_id %>">#<%= shipment.order_id %></a></div>
+                </div>
+                <div>
+                    <div style="font-size: 12px; color: var(--dark-gray);">Carrier</div>
+                    <div><%= shipment.carrier %></div>
+                </div>
+                <div>
+                    <div style="font-size: 12px; color: var(--dark-gray);">Created</div>
+                    <div><%= new Date(shipment.created_at).toLocaleDateString('en-SG') %></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div style="font-size: 12px; color: var(--dark-gray);">Recipient</div>
+                <div><%= shipment.recipient_name %></div>
+                <div><%= shipment.recipient_address %></div>
+                <div><%= shipment.recipient_phone %></div>
+            </div>
+        </div>
+
+        <!-- Update Status -->
+        <div class="detail-card">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-edit"></i> Update Status</h3>
+            <form action="/admin/shipment/<%= shipment.id %>/status" method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="status">New Status</label>
+                        <select name="status" id="status" required>
+                            <option value="Processing" <%= shipment.status === 'Processing' ? 'selected' : '' %>>Processing</option>
+                            <option value="Shipped" <%= shipment.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                            <option value="In Transit" <%= shipment.status === 'In Transit' ? 'selected' : '' %>>In Transit</option>
+                            <option value="Out for Delivery" <%= shipment.status === 'Out for Delivery' ? 'selected' : '' %>>Out for Delivery</option>
+                            <option value="Delivered" <%= shipment.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                            <option value="Failed" <%= shipment.status === 'Failed' ? 'selected' : '' %>>Failed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location (optional)</label>
+                        <input type="text" name="location" id="location" placeholder="e.g., Singapore Hub">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <input type="text" name="description" id="description" placeholder="Status update description">
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-save"></i> Update Status</button>
+            </form>
+        </div>
+
+        <!-- Add Tracking -->
+        <div class="detail-card">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-plus"></i> Add Tracking Update</h3>
+            <form action="/admin/shipment/<%= shipment.id %>/tracking" method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="track_status">Status</label>
+                        <input type="text" name="status" id="track_status" placeholder="e.g., In Transit">
+                    </div>
+                    <div class="form-group">
+                        <label for="track_location">Location</label>
+                        <input type="text" name="location" id="track_location" placeholder="e.g., Distribution Center">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="track_description">Description *</label>
+                    <input type="text" name="description" id="track_description" placeholder="Tracking update description" required>
+                </div>
+                <button type="submit" class="btn btn-secondary"><i class="fas fa-plus"></i> Add Update</button>
+            </form>
+        </div>
+
+        <!-- Tracking History -->
+        <div class="detail-card">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-history"></i> Tracking History</h3>
+            <% if (tracking && tracking.length > 0) { %>
+                <div class="timeline">
+                    <% tracking.forEach(item => { %>
+                        <div class="timeline-item">
+                            <div style="font-weight: 600;"><%= item.status %></div>
+                            <div style="color: var(--dark-gray); font-size: 14px;">
+                                <% if (item.location) { %><i class="fas fa-map-marker-alt"></i> <%= item.location %> - <% } %>
+                                <%= item.description %>
+                            </div>
+                            <div style="font-size: 12px; color: var(--dark-gray); margin-top: 3px;">
+                                <%= new Date(item.created_at).toLocaleString('en-SG') %>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <p style="color: var(--dark-gray);">No tracking history.</p>
+            <% } %>
+        </div>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

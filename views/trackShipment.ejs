@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Shipment - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- [NEW FILE] Created for shipment tracking feature -->
+    <style>
+        .track-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .track-form {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        .track-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        .track-input-group input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+        .track-input-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+        .shipment-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+        }
+        .shipment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--light-gray);
+            margin-bottom: 25px;
+        }
+        .tracking-number {
+            font-family: monospace;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .status-badge.processing { background: #fff3cd; color: #856404; }
+        .status-badge.shipped { background: #cfe2ff; color: #084298; }
+        .status-badge.in-transit { background: #d1e7ff; color: #0a58ca; }
+        .status-badge.out-for-delivery { background: #d1e7dd; color: #0f5132; }
+        .status-badge.delivered { background: #198754; color: white; }
+        .shipment-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .info-item {
+            padding: 15px;
+            background: var(--light-gray);
+            border-radius: 8px;
+        }
+        .info-item .label {
+            font-size: 12px;
+            color: var(--dark-gray);
+            margin-bottom: 5px;
+        }
+        .info-item .value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--light-gray);
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 25px;
+        }
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+        .timeline-item:first-child::before {
+            background: #28a745;
+            box-shadow: 0 0 0 2px #28a745;
+        }
+        .timeline-status {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .timeline-location {
+            color: var(--dark-gray);
+            font-size: 14px;
+        }
+        .timeline-time {
+            color: var(--dark-gray);
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .no-result {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--dark-gray);
+        }
+        .no-result i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'track' }) %>
+
+    <div class="track-container">
+        <h1 style="margin-bottom: 30px; text-align: center;">
+            <i class="fas fa-shipping-fast"></i> Track Your Shipment
+        </h1>
+
+        <div class="track-form">
+            <form action="/track" method="GET">
+                <div class="track-input-group">
+                    <input type="text" name="tracking" placeholder="Enter tracking number (e.g., HBM...)"
+                           value="<%= typeof trackingNumber !== 'undefined' ? trackingNumber : '' %>">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-search"></i> Track
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="no-result">
+                <i class="fas fa-box-open"></i>
+                <h3><%= error %></h3>
+                <p>Please check your tracking number and try again.</p>
+            </div>
+        <% } else if (shipment) { %>
+            <div class="shipment-card">
+                <div class="shipment-header">
+                    <div>
+                        <div style="font-size: 12px; color: var(--dark-gray);">Tracking Number</div>
+                        <div class="tracking-number"><%= shipment.tracking_number %></div>
+                    </div>
+                    <span class="status-badge <%= shipment.status.toLowerCase().replace(/ /g, '-') %>">
+                        <%= shipment.status %>
+                    </span>
+                </div>
+
+                <div class="shipment-info">
+                    <div class="info-item">
+                        <div class="label">Carrier</div>
+                        <div class="value"><%= shipment.carrier %></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Shipped Date</div>
+                        <div class="value">
+                            <% if (shipment.shipped_at) { %>
+                                <%= new Date(shipment.shipped_at).toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' }) %>
+                            <% } else { %>
+                                Pending
+                            <% } %>
+                        </div>
+                    </div>
+                    <% if (shipment.estimated_delivery) { %>
+                        <div class="info-item">
+                            <div class="label">Estimated Delivery</div>
+                            <div class="value"><%= new Date(shipment.estimated_delivery).toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' }) %></div>
+                        </div>
+                    <% } %>
+                    <% if (shipment.delivered_at) { %>
+                        <div class="info-item">
+                            <div class="label">Delivered</div>
+                            <div class="value" style="color: #28a745;"><%= new Date(shipment.delivered_at).toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' }) %></div>
+                        </div>
+                    <% } %>
+                </div>
+
+                <h4 style="margin-bottom: 20px;"><i class="fas fa-history"></i> Tracking History</h4>
+                <% if (tracking && tracking.length > 0) { %>
+                    <div class="timeline">
+                        <% tracking.forEach((item, index) => { %>
+                            <div class="timeline-item">
+                                <div class="timeline-status"><%= item.status %></div>
+                                <div class="timeline-location">
+                                    <% if (item.location) { %><i class="fas fa-map-marker-alt"></i> <%= item.location %> - <% } %>
+                                    <%= item.description %>
+                                </div>
+                                <div class="timeline-time">
+                                    <%= new Date(item.created_at).toLocaleString('en-SG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <p style="color: var(--dark-gray);">No tracking updates yet.</p>
+                <% } %>
+            </div>
+        <% } else if (typeof trackingNumber === 'undefined') { %>
+            <div class="no-result">
+                <i class="fas fa-truck"></i>
+                <h3>Enter your tracking number above</h3>
+                <p>Your tracking number can be found in your order confirmation email.</p>
+            </div>
+        <% } %>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

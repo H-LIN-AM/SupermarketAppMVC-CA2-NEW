@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay for Membership - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .pay-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .pay-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 35px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .plan-summary {
+            text-align: center;
+            padding-bottom: 25px;
+            border-bottom: 2px solid var(--light-gray);
+            margin-bottom: 25px;
+        }
+        .plan-summary h2 {
+            margin-bottom: 10px;
+        }
+        .plan-summary .price {
+            font-size: 42px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .plan-summary .price span {
+            font-size: 16px;
+            color: var(--dark-gray);
+        }
+        .plan-details {
+            margin-bottom: 25px;
+        }
+        .plan-details p {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .payment-methods {
+            margin-bottom: 25px;
+        }
+        .payment-methods h4 {
+            margin-bottom: 15px;
+        }
+        .payment-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: border-color 0.3s, background 0.3s;
+        }
+        .payment-option:hover {
+            border-color: var(--primary);
+        }
+        .payment-option.selected {
+            border-color: var(--primary);
+            background: rgba(52, 152, 219, 0.05);
+        }
+        .payment-option input {
+            margin-right: 15px;
+        }
+        .payment-option img {
+            height: 30px;
+            margin-right: 15px;
+        }
+        .payment-option span {
+            font-weight: 500;
+        }
+        .pay-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 18px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .pay-btn:hover {
+            background: var(--primary-hover);
+        }
+        .pay-btn:disabled {
+            background: var(--dark-gray);
+            cursor: not-allowed;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .loading-overlay.show {
+            display: flex;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--light-gray);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'membership' }) %>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px; font-size: 18px;">Processing payment...</p>
+    </div>
+
+    <div class="pay-container">
+        <div style="margin-bottom: 20px;">
+            <a href="/membership" style="color: var(--primary); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Back to Membership Plans
+            </a>
+        </div>
+
+        <div class="pay-card">
+            <div class="plan-summary">
+                <h2><i class="fas fa-crown"></i> <%= membership.plan_name %></h2>
+                <div class="price">$<%= parseFloat(membership.plan_price).toFixed(2) %> <span>SGD</span></div>
+            </div>
+
+            <div class="plan-details">
+                <p><span>Duration</span><strong><%= membership.duration_days %> days</strong></p>
+                <p><span>Vouchers</span><strong><%= membership.voucher_count %> x <%= membership.voucher_type === 'percentage' ? membership.voucher_value + '%' : '$' + membership.voucher_value %></strong></p>
+                <p><span>Min. Order</span><strong>$<%= parseFloat(membership.voucher_min_order).toFixed(2) %></strong></p>
+            </div>
+
+            <div class="payment-methods">
+                <h4><i class="fas fa-credit-card"></i> Select Payment Method</h4>
+                <label class="payment-option selected" onclick="selectPayment('alipay')">
+                    <input type="radio" name="paymentMethod" value="alipay" checked>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Alipay_logo_%282020%29.svg/200px-Alipay_logo_%282020%29.svg.png" alt="Alipay">
+                    <span>Alipay</span>
+                </label>
+                <label class="payment-option" onclick="selectPayment('paypal')">
+                    <input type="radio" name="paymentMethod" value="paypal">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/200px-PayPal.svg.png" alt="PayPal">
+                    <span>PayPal</span>
+                </label>
+            </div>
+
+            <button class="pay-btn" id="payBtn" onclick="startPayment()">
+                <i class="fas fa-lock"></i> Pay $<%= parseFloat(membership.plan_price).toFixed(2) %> Now
+            </button>
+
+            <a href="/membership" class="back-link">Cancel</a>
+        </div>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+
+    <script>
+        const membershipId = <%= membership.id %>;
+        let selectedMethod = 'alipay';
+        let outTradeNo = null;
+        let pollInterval = null;
+
+        function selectPayment(method) {
+            selectedMethod = method;
+            document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`input[value="${method}"]`).closest('.payment-option').classList.add('selected');
+        }
+
+        async function startPayment() {
+            const btn = document.getElementById('payBtn');
+            const overlay = document.getElementById('loadingOverlay');
+
+            btn.disabled = true;
+            overlay.classList.add('show');
+
+            try {
+                const response = await fetch(`/membership/pay/${membershipId}/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ paymentMethod: selectedMethod })
+                });
+                const data = await response.json();
+
+                if (!data.ok) {
+                    throw new Error(data.error || 'Payment failed');
+                }
+
+                if (data.alreadyActive) {
+                    window.location.href = '/membership/my';
+                    return;
+                }
+
+                outTradeNo = data.outTradeNo;
+
+                // Open payment URL in new window
+                const payWin = window.open(data.url, '_blank');
+
+                // Start polling for payment status
+                startPolling();
+
+            } catch (error) {
+                alert(error.message);
+                overlay.classList.remove('show');
+                btn.disabled = false;
+            }
+        }
+
+        function startPolling() {
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/membership/pay/${membershipId}/status?out_trade_no=${encodeURIComponent(outTradeNo)}`);
+                    const data = await response.json();
+
+                    if (data.ok && data.paid) {
+                        clearInterval(pollInterval);
+                        window.location.href = `/membership/pay/${membershipId}/finish?out_trade_no=${encodeURIComponent(outTradeNo)}`;
+                    }
+                } catch (e) {
+                    console.error('Poll error:', e);
+                }
+            }, 3000);
+
+            // Stop polling after 10 minutes
+            setTimeout(() => {
+                if (pollInterval) {
+                    clearInterval(pollInterval);
+                    document.getElementById('loadingOverlay').classList.remove('show');
+                    document.getElementById('payBtn').disabled = false;
+                }
+            }, 10 * 60 * 1000);
+        }
+    </script>
+</body>
+</html>

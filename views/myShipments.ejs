@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Shipments - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- [NEW FILE] User shipments list -->
+    <style>
+        .shipments-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .shipment-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .shipment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light-gray);
+        }
+        .tracking-code {
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .status-badge {
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status-badge.processing { background: #fff3cd; color: #856404; }
+        .status-badge.shipped { background: #cfe2ff; color: #084298; }
+        .status-badge.in-transit { background: #d1e7ff; color: #0a58ca; }
+        .status-badge.out-for-delivery { background: #d1e7dd; color: #0f5132; }
+        .status-badge.delivered { background: #198754; color: white; }
+        .status-badge.failed { background: #f8d7da; color: #842029; }
+        .shipment-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .detail-label {
+            font-size: 12px;
+            color: var(--dark-gray);
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--dark-gray);
+        }
+        .empty-state i {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'shipments' }) %>
+
+    <div class="shipments-container">
+        <h1 style="margin-bottom: 30px;">
+            <i class="fas fa-truck"></i> My Shipments
+        </h1>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+        <% if (messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error"><%= messages.error[0] %></div>
+        <% } %>
+
+        <% if (shipments && shipments.length > 0) { %>
+            <% shipments.forEach(s => { %>
+                <div class="shipment-card">
+                    <div class="shipment-header">
+                        <div>
+                            <span class="tracking-code"><%= s.tracking_number %></span>
+                            <span style="color: var(--dark-gray); margin-left: 10px;">
+                                for Order <a href="/order/<%= s.order_id %>">#<%= s.order_id %></a>
+                            </span>
+                        </div>
+                        <span class="status-badge <%= s.status.toLowerCase().replace(/ /g, '-') %>">
+                            <%= s.status %>
+                        </span>
+                    </div>
+
+                    <div class="shipment-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Carrier</span>
+                            <span class="detail-value"><%= s.carrier %></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Created</span>
+                            <span class="detail-value"><%= new Date(s.created_at).toLocaleDateString('en-SG') %></span>
+                        </div>
+                        <% if (s.shipped_at) { %>
+                            <div class="detail-item">
+                                <span class="detail-label">Shipped</span>
+                                <span class="detail-value"><%= new Date(s.shipped_at).toLocaleDateString('en-SG') %></span>
+                            </div>
+                        <% } %>
+                        <% if (s.delivered_at) { %>
+                            <div class="detail-item">
+                                <span class="detail-label">Delivered</span>
+                                <span class="detail-value"><%= new Date(s.delivered_at).toLocaleDateString('en-SG') %></span>
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <div style="margin-top: 15px; text-align: right;">
+                        <a href="/order/<%= s.order_id %>/shipment" class="btn btn-sm">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                        <a href="/track?tracking=<%= s.tracking_number %>" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-search"></i> Track
+                        </a>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div class="empty-state">
+                <i class="fas fa-truck"></i>
+                <h2>No Shipments</h2>
+                <p>You don't have any shipments yet.</p>
+            </div>
+        <% } %>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

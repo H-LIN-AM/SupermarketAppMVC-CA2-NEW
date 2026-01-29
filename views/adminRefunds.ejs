@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Refunds - HB Mart Admin</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- [NEW FILE] Admin refunds management -->
+    <style>
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .data-table th, .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .data-table th {
+            background: var(--light-gray);
+            font-weight: 600;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .status-badge.approved { background: #cfe2ff; color: #084298; }
+        .status-badge.rejected { background: #f8d7da; color: #842029; }
+        .status-badge.completed { background: #d1e7dd; color: #0f5132; }
+        .status-badge.cancelled { background: #e2e3e5; color: #383d41; }
+        .btn-approve { background: #198754; color: white; }
+        .btn-reject { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'admin' }) %>
+
+    <div class="admin-container">
+        <h1 style="margin-bottom: 30px;"><i class="fas fa-undo"></i> Manage Refunds</h1>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+        <% if (messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error"><%= messages.error[0] %></div>
+        <% } %>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (refunds && refunds.length > 0) { %>
+                    <% refunds.forEach(r => { %>
+                        <tr>
+                            <td>#<%= r.id %></td>
+                            <td><a href="/order/<%= r.order_id %>">#<%= r.order_id %></a></td>
+                            <td>
+                                <strong><%= r.username %></strong><br>
+                                <small><%= r.email %></small>
+                            </td>
+                            <td style="color: var(--primary); font-weight: bold;">$<%= parseFloat(r.amount).toFixed(2) %></td>
+                            <td><%= r.reason %></td>
+                            <td>
+                                <span class="status-badge <%= r.status.toLowerCase() %>"><%= r.status %></span>
+                            </td>
+                            <td><%= new Date(r.requested_at).toLocaleDateString('en-SG') %></td>
+                            <td>
+                                <a href="/admin/refund/<%= r.id %>" class="btn btn-sm">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <% if (r.status === 'Pending') { %>
+                                    <form action="/admin/refund/<%= r.id %>/approve" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-approve" onclick="return confirm('Approve this refund?')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                    <form action="/admin/refund/<%= r.id %>/reject" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-reject" onclick="return confirm('Reject this refund?')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px;">
+                            No refund requests found.
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Shipments - HB Mart Admin</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- [NEW FILE] Admin shipments management -->
+    <style>
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .data-table th, .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .data-table th {
+            background: var(--light-gray);
+            font-weight: 600;
+        }
+        .tracking-code {
+            font-family: monospace;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-badge.processing { background: #fff3cd; color: #856404; }
+        .status-badge.shipped { background: #cfe2ff; color: #084298; }
+        .status-badge.in-transit { background: #d1e7ff; color: #0a58ca; }
+        .status-badge.out-for-delivery { background: #d1e7dd; color: #0f5132; }
+        .status-badge.delivered { background: #198754; color: white; }
+        .status-badge.failed { background: #f8d7da; color: #842029; }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'admin' }) %>
+
+    <div class="admin-container">
+        <h1 style="margin-bottom: 30px;"><i class="fas fa-shipping-fast"></i> Manage Shipments</h1>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+        <% if (messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error"><%= messages.error[0] %></div>
+        <% } %>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tracking #</th>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Carrier</th>
+                    <th>Status</th>
+                    <th>Shipped</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (shipments && shipments.length > 0) { %>
+                    <% shipments.forEach(s => { %>
+                        <tr>
+                            <td><span class="tracking-code"><%= s.tracking_number %></span></td>
+                            <td><a href="/order/<%= s.order_id %>">#<%= s.order_id %></a></td>
+                            <td>
+                                <strong><%= s.username %></strong><br>
+                                <small><%= s.email %></small>
+                            </td>
+                            <td><%= s.carrier %></td>
+                            <td>
+                                <span class="status-badge <%= s.status.toLowerCase().replace(/ /g, '-') %>">
+                                    <%= s.status %>
+                                </span>
+                            </td>
+                            <td>
+                                <% if (s.shipped_at) { %>
+                                    <%= new Date(s.shipped_at).toLocaleDateString('en-SG') %>
+                                <% } else { %>
+                                    -
+                                <% } %>
+                            </td>
+                            <td>
+                                <a href="/admin/shipment/<%= s.id %>" class="btn btn-sm">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px;">
+                            No shipments found.
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

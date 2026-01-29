@@ -139,6 +139,14 @@ app.use(flash());
 const cartControllers = require('./controllers/cartControllers');
 const orderControllers = require('./controllers/orderControllers');
 const userControllers = require('./controllers/userControllers');
+const membershipControllers = require('./controllers/membershipControllers');
+const voucherControllers = require('./controllers/voucherControllers');
+// [NEW] Import shipment and refund controllers
+const shipmentControllers = require('./controllers/shipmentControllers');
+const refundControllers = require('./controllers/refundControllers');
+
+// Enable JSON body parsing for AJAX requests
+app.use(express.json());
 
 // ========================================
 // Route Definitions
@@ -258,16 +266,15 @@ app.post('/login', validateLogin, (req, res) => {
 
         const user = results[0];
 
-        // First, must be email-verified
+        // Email verification check
         if (!user.verified) {
             req.flash('error', 'Please verify your email before logging in.');
             return res.redirect('/login');
         }
 
-        // 1st factor OK (password) → generate OTP, send for 2FA
+        // 2FA OTP verification
         const otp = generateOTP();
         setOTP(user.email, otp);  // 1 minute
-
         try {
             await sendLoginOTP(user.email, otp);
         } catch (mailErr) {
@@ -275,16 +282,12 @@ app.post('/login', validateLogin, (req, res) => {
             req.flash('error', 'Unable to send OTP. Please try again later.');
             return res.redirect('/login');
         }
-
-        // Temporarily store user info until OTP is verified
         req.session.pendingLoginUser = {
             id: user.id,
             username: user.username,
             email: user.email,
             role: user.role
         };
-
-        // Go to login OTP page
         return res.redirect('/login-otp?sent=1');
     });
 });
@@ -509,6 +512,114 @@ app.post('/admin/users/edit/:id', checkAuthenticated, checkAdmin, userController
 
 // Delete user (admin only)
 app.get('/admin/users/delete/:id', checkAuthenticated, checkAdmin, userControllers.delete);
+
+// ========================================
+// Membership Routes
+// ========================================
+
+// View membership plans
+app.get('/membership', checkAuthenticated, membershipControllers.showPlans);
+
+// My membership page
+app.get('/membership/my', checkAuthenticated, membershipControllers.showMyMembership);
+
+// Subscribe to a plan
+app.get('/membership/subscribe/:planId', checkAuthenticated, membershipControllers.subscribe);
+
+// Pay for membership
+app.get('/membership/pay/:id', checkAuthenticated, membershipControllers.showPayPage);
+app.post('/membership/pay/:id/start', checkAuthenticated, membershipControllers.startPayment);
+app.get('/membership/pay/:id/status', checkAuthenticated, membershipControllers.checkPaymentStatus);
+app.get('/membership/pay/:id/finish', checkAuthenticated, membershipControllers.finishPayment);
+
+// Admin: Membership plans management
+app.get('/admin/membership/plans', checkAuthenticated, checkAdmin, membershipControllers.adminListPlans);
+app.get('/admin/membership/plans/create', checkAuthenticated, checkAdmin, membershipControllers.adminShowCreatePlan);
+app.post('/admin/membership/plans/create', checkAuthenticated, checkAdmin, membershipControllers.adminCreatePlan);
+app.get('/admin/membership/plans/edit/:id', checkAuthenticated, checkAdmin, membershipControllers.adminShowEditPlan);
+app.post('/admin/membership/plans/edit/:id', checkAuthenticated, checkAdmin, membershipControllers.adminUpdatePlan);
+app.get('/admin/membership/plans/delete/:id', checkAuthenticated, checkAdmin, membershipControllers.adminDeletePlan);
+
+// Admin: View all memberships
+app.get('/admin/memberships', checkAuthenticated, checkAdmin, membershipControllers.adminListMemberships);
+
+// ========================================
+// Voucher Routes
+// ========================================
+
+// My vouchers page
+app.get('/vouchers', checkAuthenticated, voucherControllers.showMyVouchers);
+
+// Validate voucher (AJAX)
+app.post('/voucher/validate', checkAuthenticated, voucherControllers.validateVoucher);
+
+// Remove voucher from session (AJAX)
+app.post('/voucher/remove', checkAuthenticated, voucherControllers.removeVoucher);
+
+// Admin: Voucher management
+app.get('/admin/vouchers', checkAuthenticated, checkAdmin, voucherControllers.adminListVouchers);
+app.get('/admin/vouchers/create', checkAuthenticated, checkAdmin, voucherControllers.adminShowCreateVoucher);
+app.post('/admin/vouchers/create', checkAuthenticated, checkAdmin, voucherControllers.adminCreateVoucher);
+app.get('/admin/vouchers/delete/:id', checkAuthenticated, checkAdmin, voucherControllers.adminDeleteVoucher);
+
+// ========================================
+// Shipment Routes [NEW]
+// ========================================
+
+// Track shipment (public search page)
+app.get('/track', shipmentControllers.trackShipment);
+
+// View shipment for specific order
+app.get('/order/:orderId/shipment', checkAuthenticated, shipmentControllers.viewOrderShipment);
+
+// User's shipments list
+app.get('/shipments', checkAuthenticated, shipmentControllers.listUserShipments);
+
+// Admin: List all shipments
+app.get('/admin/shipments', checkAuthenticated, checkAdmin, shipmentControllers.adminListShipments);
+
+// Admin: Ship an order
+app.post('/admin/order/:orderId/ship', checkAuthenticated, checkAdmin, shipmentControllers.adminShipOrder);
+
+// Admin: View shipment detail
+app.get('/admin/shipment/:id', checkAuthenticated, checkAdmin, shipmentControllers.adminViewShipment);
+
+// Admin: Update shipment status
+app.post('/admin/shipment/:id/status', checkAuthenticated, checkAdmin, shipmentControllers.adminUpdateShipmentStatus);
+
+// Admin: Add tracking record
+app.post('/admin/shipment/:id/tracking', checkAuthenticated, checkAdmin, shipmentControllers.adminAddTracking);
+
+// ========================================
+// Refund Routes [NEW]
+// ========================================
+
+// Show refund request form
+app.get('/order/:orderId/refund', checkAuthenticated, refundControllers.showRefundForm);
+
+// Submit refund request
+app.post('/order/:orderId/refund', checkAuthenticated, refundControllers.submitRefund);
+
+// User's refund requests list
+app.get('/refunds', checkAuthenticated, refundControllers.listUserRefunds);
+
+// Cancel refund request
+app.get('/refund/:id/cancel', checkAuthenticated, refundControllers.cancelRefund);
+
+// Admin: List all refunds
+app.get('/admin/refunds', checkAuthenticated, checkAdmin, refundControllers.adminListRefunds);
+
+// Admin: View refund detail
+app.get('/admin/refund/:id', checkAuthenticated, checkAdmin, refundControllers.adminViewRefund);
+
+// Admin: Approve refund
+app.post('/admin/refund/:id/approve', checkAuthenticated, checkAdmin, refundControllers.adminApproveRefund);
+
+// Admin: Reject refund
+app.post('/admin/refund/:id/reject', checkAuthenticated, checkAdmin, refundControllers.adminRejectRefund);
+
+// Admin: Complete refund
+app.post('/admin/refund/:id/complete', checkAuthenticated, checkAdmin, refundControllers.adminCompleteRefund);
 
 // ========================================
 // Product Related Routes

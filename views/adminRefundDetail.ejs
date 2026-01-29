@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund Details - HB Mart Admin</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- [NEW FILE] Admin refund detail page -->
+    <style>
+        .detail-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .detail-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .status-badge.approved { background: #cfe2ff; color: #084298; }
+        .status-badge.rejected { background: #f8d7da; color: #842029; }
+        .status-badge.completed { background: #d1e7dd; color: #0f5132; }
+        .status-badge.cancelled { background: #e2e3e5; color: #383d41; }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .info-label {
+            font-size: 12px;
+            color: var(--dark-gray);
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 6px;
+            min-height: 100px;
+            resize: vertical;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .btn-approve {
+            background: #198754;
+            color: white;
+            flex: 1;
+        }
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+            flex: 1;
+        }
+        .refund-amount {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'admin' }) %>
+
+    <div class="detail-container">
+        <div style="margin-bottom: 20px;">
+            <a href="/admin/refunds" style="color: var(--primary); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Back to Refunds
+            </a>
+        </div>
+
+        <h1 style="margin-bottom: 30px;">
+            <i class="fas fa-undo"></i> Refund #<%= refund.id %>
+        </h1>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+        <% if (messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error"><%= messages.error[0] %></div>
+        <% } %>
+
+        <!-- Refund Info -->
+        <div class="detail-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3><i class="fas fa-info-circle"></i> Refund Information</h3>
+                <span class="status-badge <%= refund.status.toLowerCase() %>">
+                    <%= refund.status %>
+                </span>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 25px; padding: 20px; background: var(--light-gray); border-radius: 8px;">
+                <div style="font-size: 14px; color: var(--dark-gray); margin-bottom: 5px;">Refund Amount</div>
+                <div class="refund-amount">$<%= parseFloat(refund.amount).toFixed(2) %></div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Order</span>
+                    <span class="info-value">
+                        <a href="/order/<%= refund.order_id %>">#<%= refund.order_id %></a>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Customer</span>
+                    <span class="info-value"><%= refund.username %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Email</span>
+                    <span class="info-value"><%= refund.email %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Requested</span>
+                    <span class="info-value"><%= new Date(refund.requested_at).toLocaleString('en-SG') %></span>
+                </div>
+                <% if (refund.processed_at) { %>
+                    <div class="info-item">
+                        <span class="info-label">Processed</span>
+                        <span class="info-value"><%= new Date(refund.processed_at).toLocaleString('en-SG') %></span>
+                    </div>
+                <% } %>
+                <% if (refund.processed_by) { %>
+                    <div class="info-item">
+                        <span class="info-label">Processed By</span>
+                        <span class="info-value">Admin #<%= refund.processed_by %></span>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Reason -->
+        <div class="detail-card">
+            <h3 style="margin-bottom: 15px;"><i class="fas fa-question-circle"></i> Reason</h3>
+            <div style="padding: 15px; background: var(--light-gray); border-radius: 8px;">
+                <strong><%= refund.reason %></strong>
+                <% if (refund.description) { %>
+                    <p style="margin-top: 10px; color: var(--dark-gray);"><%= refund.description %></p>
+                <% } %>
+            </div>
+        </div>
+
+        <% if (refund.admin_note) { %>
+            <!-- Admin Note -->
+            <div class="detail-card">
+                <h3 style="margin-bottom: 15px;"><i class="fas fa-comment"></i> Admin Note</h3>
+                <div style="padding: 15px; background: var(--light-gray); border-radius: 8px;">
+                    <p><%= refund.admin_note %></p>
+                </div>
+            </div>
+        <% } %>
+
+        <% if (refund.status === 'Pending') { %>
+            <!-- Actions -->
+            <div class="detail-card">
+                <h3 style="margin-bottom: 20px;"><i class="fas fa-gavel"></i> Process Refund</h3>
+
+                <div class="form-group">
+                    <label for="admin_note">Admin Note (optional)</label>
+                    <textarea id="admin_note" placeholder="Add a note for the customer about this decision..."></textarea>
+                </div>
+
+                <div class="action-buttons">
+                    <form action="/admin/refund/<%= refund.id %>/approve" method="POST" style="flex: 1;">
+                        <input type="hidden" name="admin_note" class="admin-note-input">
+                        <button type="submit" class="btn btn-approve" style="width: 100%;"
+                                onclick="this.form.querySelector('.admin-note-input').value = document.getElementById('admin_note').value; return confirm('Approve this refund? This will refund $<%= parseFloat(refund.amount).toFixed(2) %> to the customer.')">
+                            <i class="fas fa-check"></i> Approve Refund
+                        </button>
+                    </form>
+                    <form action="/admin/refund/<%= refund.id %>/reject" method="POST" style="flex: 1;">
+                        <input type="hidden" name="admin_note" class="admin-note-input">
+                        <button type="submit" class="btn btn-reject" style="width: 100%;"
+                                onclick="this.form.querySelector('.admin-note-input').value = document.getElementById('admin_note').value; return confirm('Reject this refund request?')">
+                            <i class="fas fa-times"></i> Reject Refund
+                        </button>
+                    </form>
+                </div>
+            </div>
+        <% } %>
+
+        <% if (refund.status === 'Approved') { %>
+            <!-- Complete Refund -->
+            <div class="detail-card">
+                <h3 style="margin-bottom: 20px;"><i class="fas fa-check-circle"></i> Complete Refund</h3>
+                <p style="color: var(--dark-gray); margin-bottom: 15px;">
+                    This refund has been approved. Click below to mark it as completed once the payment has been processed.
+                </p>
+                <form action="/admin/refund/<%= refund.id %>/complete" method="POST">
+                    <button type="submit" class="btn" onclick="return confirm('Mark this refund as completed?')">
+                        <i class="fas fa-check-double"></i> Mark as Completed
+                    </button>
+                </form>
+            </div>
+        <% } %>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

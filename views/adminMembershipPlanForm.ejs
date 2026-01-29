@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= plan ? 'Edit' : 'Create' %> Membership Plan - HB Mart Admin</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .form-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 35px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .form-check input {
+            width: auto;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        .btn-secondary {
+            background: var(--dark-gray);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'admin' }) %>
+
+    <div class="form-container">
+        <div style="margin-bottom: 20px;">
+            <a href="/admin/membership/plans" style="color: var(--primary); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Back to Plans
+            </a>
+        </div>
+
+        <div class="form-card">
+            <h2 style="margin-bottom: 25px;">
+                <i class="fas fa-crown"></i> <%= plan ? 'Edit' : 'Create' %> Membership Plan
+            </h2>
+
+            <% if (messages.error && messages.error.length > 0) { %>
+                <div class="alert alert-error"><%= messages.error[0] %></div>
+            <% } %>
+
+            <form action="<%= plan ? '/admin/membership/plans/edit/' + plan.id : '/admin/membership/plans/create' %>" method="POST">
+                <div class="form-group">
+                    <label for="name">Plan Name *</label>
+                    <input type="text" id="name" name="name" value="<%= plan ? plan.name : '' %>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description"><%= plan ? plan.description : '' %></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="price">Price (SGD) *</label>
+                        <input type="number" id="price" name="price" step="0.01" min="0" value="<%= plan ? plan.price : '' %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="duration_days">Duration (days) *</label>
+                        <input type="number" id="duration_days" name="duration_days" min="1" value="<%= plan ? plan.duration_days : 30 %>" required>
+                    </div>
+                </div>
+
+                <h4 style="margin: 25px 0 15px; padding-top: 15px; border-top: 1px solid var(--light-gray);">
+                    <i class="fas fa-ticket-alt"></i> Voucher Settings
+                </h4>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="voucher_count">Number of Vouchers</label>
+                        <input type="number" id="voucher_count" name="voucher_count" min="1" value="<%= plan ? plan.voucher_count : 1 %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="voucher_type">Voucher Type</label>
+                        <select id="voucher_type" name="voucher_type">
+                            <option value="percentage" <%= plan && plan.voucher_type === 'percentage' ? 'selected' : '' %>>Percentage (%)</option>
+                            <option value="fixed" <%= plan && plan.voucher_type === 'fixed' ? 'selected' : '' %>>Fixed Amount ($)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="voucher_value">Voucher Value</label>
+                        <input type="number" id="voucher_value" name="voucher_value" step="0.01" min="0" value="<%= plan ? plan.voucher_value : 10 %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="voucher_min_order">Min. Order Amount ($)</label>
+                        <input type="number" id="voucher_min_order" name="voucher_min_order" step="0.01" min="0" value="<%= plan ? plan.voucher_min_order : 0 %>">
+                    </div>
+                </div>
+
+                <div class="form-group form-check">
+                    <input type="checkbox" id="is_active" name="is_active" <%= !plan || plan.is_active ? 'checked' : '' %>>
+                    <label for="is_active">Active (visible to users)</label>
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-save"></i> <%= plan ? 'Update' : 'Create' %> Plan
+                    </button>
+                    <a href="/admin/membership/plans" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

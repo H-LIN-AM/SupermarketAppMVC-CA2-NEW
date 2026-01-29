@@ -5,6 +5,7 @@
 // ========================================
 const Order = require('../models/order');  // Order model
 const cartModel = require('../models/cart');  // Cart model
+const Voucher = require('../models/voucher');  // Voucher model
 const alipaySandbox = require('../utils/alipaySandbox');
 const paypalSandbox = require('../utils/paypalSandbox');
 const netsSandbox = require('../utils/netsSandbox');
@@ -15,10 +16,12 @@ const netsSandbox = require('../utils/netsSandbox');
  */
 function checkout(req, res) {
     const user = req.session.user;  // Get current user
-    
+    const voucherCode = (req.body.voucherCode || '').toString().trim().toUpperCase();
+
     console.log('=== Checkout Process Started ===');
     console.log('User ID:', user.id);
-    
+    console.log('Voucher Code:', voucherCode || 'None');
+
     // Get cart data from database
     cartModel.getCart(user.id, (err, cart) => {
         if (err) {
@@ -26,16 +29,16 @@ function checkout(req, res) {
             req.flash('error', 'Error loading cart. Please try again.');
             return res.redirect('/cart');
         }
-        
+
         console.log('Cart items:', cart.length);
-        
+
         // Check if cart is empty
         if (!cart || cart.length === 0) {
             console.log('Cart is empty, redirecting...');
             req.flash('error', 'Your cart is empty');
             return res.redirect('/cart');
         }
-        
+
         // Validate cart items
         for (let item of cart) {
             if (!item.productId || !item.price || !item.quantity) {
@@ -44,53 +47,85 @@ function checkout(req, res) {
                 return res.redirect('/cart');
             }
         }
-        
-        // Calculate order total
-        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        console.log('Order total:', total);
-        
-        // Prepare order items data
-        const items = cart.map(item => ({
-            productId: item.productId,
-            productName: item.productName,
-            quantity: item.quantity,
-            price: item.price
-        }));
-        
-        console.log('Creating order with items:', JSON.stringify(items));
-        
-        // Create order
-        Order.create(user.id, total, items, (err, result) => {
-            if (err) {
-                // Order creation failed, log error details
-                console.error('=== Error creating order ===');
-                console.error('Error details:', err);
-                console.error('Error message:', err.message);
-                console.error('Error code:', err.code);
-                console.error('SQL State:', err.sqlState);
-                req.flash('error', 'Failed to create order. Please try again or contact support.');
-                return res.redirect('/cart');
-            }
-            
-            console.log('Order created successfully:', result);
-            const orderId = result.orderId || result.insertId;
 
-            Order.updateStatus(orderId, 'Unpaid', (statusErr) => {
-                if (statusErr) {
-                    console.error('Error setting order status to Unpaid:', statusErr);
+        // Calculate order total
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        console.log('Order subtotal:', subtotal);
+
+        // Process voucher if provided
+        const processOrder = (voucherData) => {
+            const discount = voucherData ? voucherData.discount : 0;
+            const total = subtotal - discount;
+
+            console.log('Discount:', discount);
+            console.log('Final total:', total);
+
+            // Prepare order items data
+            const items = cart.map(item => ({
+                productId: item.productId,
+                productName: item.productName,
+                quantity: item.quantity,
+                price: item.price
+            }));
+
+            console.log('Creating order with items:', JSON.stringify(items));
+
+            // Create order with voucher info
+            Order.createWithVoucher(user.id, total, items, voucherData, (err, result) => {
+                if (err) {
+                    console.error('=== Error creating order ===');
+                    console.error('Error details:', err);
+                    req.flash('error', 'Failed to create order. Please try again or contact support.');
+                    return res.redirect('/cart');
                 }
-            
-                // Clear cart from database after successful order
-                cartModel.clearCart(user.id, (clearErr) => {
-                    if (clearErr) {
-                        console.error('Error clearing cart:', clearErr);
+
+                console.log('Order created successfully:', result);
+                const orderId = result.orderId || result.insertId;
+
+                // Mark voucher as used if applicable
+                if (voucherData && voucherData.voucher) {
+                    Voucher.useVoucher(voucherData.voucher.id, orderId, (vErr) => {
+                        if (vErr) console.error('Error marking voucher as used:', vErr);
+                    });
+                }
+
+                Order.updateStatus(orderId, 'Unpaid', (statusErr) => {
+                    if (statusErr) {
+                        console.error('Error setting order status to Unpaid:', statusErr);
                     }
-                    
-                    req.flash('success', 'Order created. Please complete payment.');
-                    res.redirect(`/order/${orderId}/pay`);
+
+                    // Clear cart from database after successful order
+                    cartModel.clearCart(user.id, (clearErr) => {
+                        if (clearErr) {
+                            console.error('Error clearing cart:', clearErr);
+                        }
+
+                        req.flash('success', 'Order created. Please complete payment.');
+                        res.redirect(`/order/${orderId}/pay`);
+                    });
                 });
             });
-        });
+        };
+
+        // Validate voucher if provided
+        if (voucherCode) {
+            Voucher.validateVoucher(voucherCode, user.id, subtotal, (err, result) => {
+                if (err) {
+                    console.error('Error validating voucher:', err);
+                    req.flash('error', 'Error validating voucher');
+                    return res.redirect('/cart');
+                }
+
+                if (!result.valid) {
+                    req.flash('error', result.error || 'Invalid voucher');
+                    return res.redirect('/cart');
+                }
+
+                processOrder(result);
+            });
+        } else {
+            processOrder(null);
+        }
     });
 }
 

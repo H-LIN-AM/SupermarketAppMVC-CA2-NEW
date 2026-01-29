@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Membership - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .my-membership-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .membership-status-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 35px;
+            margin-bottom: 30px;
+        }
+        .membership-status-card.inactive {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+        .membership-status-card h2 {
+            margin-bottom: 20px;
+        }
+        .membership-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+        .membership-info-item {
+            text-align: center;
+        }
+        .membership-info-item .label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        .membership-info-item .value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .section-title {
+            margin: 40px 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .vouchers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .voucher-card {
+            background: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            position: relative;
+        }
+        .voucher-card.used {
+            opacity: 0.6;
+        }
+        .voucher-card.expired {
+            opacity: 0.5;
+        }
+        .voucher-header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .voucher-header.percentage { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+        .voucher-header.fixed { background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%); }
+        .voucher-header.used { background: #6c757d; }
+        .voucher-header.expired { background: #adb5bd; }
+        .voucher-value {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        .voucher-body {
+            padding: 20px;
+        }
+        .voucher-code {
+            background: var(--light-gray);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+        .voucher-details {
+            font-size: 13px;
+            color: var(--dark-gray);
+        }
+        .voucher-details p {
+            margin: 5px 0;
+        }
+        .voucher-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .voucher-status.active { background: #d4edda; color: #155724; }
+        .voucher-status.used { background: #e2e3e5; color: #383d41; }
+        .voucher-status.expired { background: #f8d7da; color: #721c24; }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--dark-gray);
+        }
+        .empty-state i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .history-table th, .history-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .history-table th {
+            background: var(--light-gray);
+            font-weight: 600;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-badge.active { background: #d4edda; color: #155724; }
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .status-badge.expired { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'membership' }) %>
+
+    <div class="my-membership-container">
+        <h1 style="margin-bottom: 30px;"><i class="fas fa-id-card"></i> My Membership</h1>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+        <% if (messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error"><%= messages.error[0] %></div>
+        <% } %>
+
+        <!-- Current Membership Status -->
+        <% if (activeMembership) { %>
+            <div class="membership-status-card">
+                <h2><i class="fas fa-crown"></i> <%= activeMembership.plan_name %> Member</h2>
+                <div class="membership-info">
+                    <div class="membership-info-item">
+                        <div class="label">Status</div>
+                        <div class="value"><i class="fas fa-check-circle"></i> Active</div>
+                    </div>
+                    <div class="membership-info-item">
+                        <div class="label">Started</div>
+                        <div class="value"><%= new Date(activeMembership.started_at).toLocaleDateString('en-SG', { month: 'short', day: 'numeric', year: 'numeric' }) %></div>
+                    </div>
+                    <div class="membership-info-item">
+                        <div class="label">Expires</div>
+                        <div class="value"><%= new Date(activeMembership.expires_at).toLocaleDateString('en-SG', { month: 'short', day: 'numeric', year: 'numeric' }) %></div>
+                    </div>
+                    <div class="membership-info-item">
+                        <div class="label">Days Left</div>
+                        <% const daysLeft = Math.max(0, Math.ceil((new Date(activeMembership.expires_at) - new Date()) / (1000 * 60 * 60 * 24))); %>
+                        <div class="value"><%= daysLeft %> days</div>
+                    </div>
+                </div>
+            </div>
+        <% } else { %>
+            <div class="membership-status-card inactive">
+                <h2><i class="fas fa-user"></i> No Active Membership</h2>
+                <p style="margin-bottom: 20px;">Subscribe to a membership plan to get exclusive vouchers!</p>
+                <a href="/membership" class="btn" style="background: white; color: #495057;">
+                    <i class="fas fa-crown"></i> View Membership Plans
+                </a>
+            </div>
+        <% } %>
+
+        <!-- My Vouchers -->
+        <div class="section-title">
+            <h2><i class="fas fa-ticket-alt"></i> My Vouchers</h2>
+            <a href="/vouchers" class="btn btn-sm btn-secondary">View All</a>
+        </div>
+
+        <%
+            const now = new Date();
+            const activeVouchers = vouchers.filter(v => !v.is_used && (!v.expires_at || new Date(v.expires_at) > now));
+        %>
+
+        <% if (activeVouchers.length > 0) { %>
+            <div class="vouchers-grid">
+                <% activeVouchers.slice(0, 6).forEach(voucher => { %>
+                    <div class="voucher-card">
+                        <span class="voucher-status active">Active</span>
+                        <div class="voucher-header <%= voucher.type %>">
+                            <div class="voucher-value">
+                                <% if (voucher.type === 'percentage') { %>
+                                    <%= voucher.value %>% OFF
+                                <% } else { %>
+                                    $<%= parseFloat(voucher.value).toFixed(2) %> OFF
+                                <% } %>
+                            </div>
+                        </div>
+                        <div class="voucher-body">
+                            <div class="voucher-code"><%= voucher.code %></div>
+                            <div class="voucher-details">
+                                <% if (voucher.min_order > 0) { %>
+                                    <p><i class="fas fa-shopping-cart"></i> Min. order: $<%= parseFloat(voucher.min_order).toFixed(2) %></p>
+                                <% } %>
+                                <% if (voucher.expires_at) { %>
+                                    <p><i class="fas fa-clock"></i> Expires: <%= new Date(voucher.expires_at).toLocaleDateString('en-SG') %></p>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <div class="empty-state">
+                <i class="fas fa-ticket-alt"></i>
+                <h3>No active vouchers</h3>
+                <p>Subscribe to a membership to get vouchers!</p>
+                <a href="/membership" class="btn" style="margin-top: 15px;">Get Vouchers</a>
+            </div>
+        <% } %>
+
+        <!-- Membership History -->
+        <div class="section-title">
+            <h2><i class="fas fa-history"></i> Membership History</h2>
+        </div>
+
+        <% if (memberships.length > 0) { %>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Plan</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% memberships.forEach(m => { %>
+                        <tr>
+                            <td><strong><%= m.plan_name %></strong></td>
+                            <td>$<%= parseFloat(m.plan_price).toFixed(2) %></td>
+                            <td>
+                                <span class="status-badge <%= m.status.toLowerCase() %>"><%= m.status %></span>
+                            </td>
+                            <td><%= new Date(m.created_at).toLocaleDateString('en-SG') %></td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        <% } else { %>
+            <div class="empty-state" style="padding: 40px;">
+                <p>No membership history yet.</p>
+            </div>
+        <% } %>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+    <script src="/js/main.js"></script>
+</body>
+</html>

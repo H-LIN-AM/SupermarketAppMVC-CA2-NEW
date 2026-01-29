@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Memberships - HB Mart Admin</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .data-table th, .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .data-table th {
+            background: var(--light-gray);
+            font-weight: 600;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-badge.active { background: #d4edda; color: #155724; }
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .status-badge.expired { background: #f8d7da; color: #721c24; }
+        .status-badge.cancelled { background: #e2e3e5; color: #383d41; }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'admin' }) %>
+
+    <div class="admin-container">
+        <h1 style="margin-bottom: 30px;"><i class="fas fa-users"></i> All Memberships</h1>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Plan</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Expires</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (memberships.length > 0) { %>
+                    <% memberships.forEach(m => { %>
+                        <tr>
+                            <td>#<%= m.id %></td>
+                            <td>
+                                <strong><%= m.username %></strong><br>
+                                <small><%= m.email %></small>
+                            </td>
+                            <td><%= m.plan_name %></td>
+                            <td>$<%= parseFloat(m.plan_price).toFixed(2) %></td>
+                            <td>
+                                <span class="status-badge <%= m.status.toLowerCase() %>"><%= m.status %></span>
+                            </td>
+                            <td><%= m.payment_method || '-' %></td>
+                            <td>
+                                <% if (m.expires_at) { %>
+                                    <%= new Date(m.expires_at).toLocaleDateString('en-SG') %>
+                                <% } else { %>
+                                    -
+                                <% } %>
+                            </td>
+                            <td><%= new Date(m.created_at).toLocaleDateString('en-SG') %></td>
+                        </tr>
+                    <% }); %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px;">
+                            No memberships found.
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

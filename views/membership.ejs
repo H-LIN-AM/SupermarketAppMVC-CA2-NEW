@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Membership - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .membership-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .membership-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        .membership-header h1 {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+        .membership-header p {
+            font-size: 18px;
+            color: var(--dark-gray);
+        }
+        .active-membership-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .active-membership-banner h3 {
+            margin: 0 0 5px 0;
+        }
+        .active-membership-banner .expires {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        .plan-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 35px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            position: relative;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        .plan-card.featured {
+            border: 3px solid var(--primary);
+        }
+        .plan-card.featured::before {
+            content: 'POPULAR';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .plan-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+        .plan-price {
+            font-size: 42px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        .plan-price span {
+            font-size: 16px;
+            color: var(--dark-gray);
+            font-weight: normal;
+        }
+        .plan-duration {
+            font-size: 14px;
+            color: var(--dark-gray);
+            margin-bottom: 25px;
+        }
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 30px 0;
+        }
+        .plan-features li {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+        .plan-features li i {
+            color: #28a745;
+            width: 20px;
+        }
+        .plan-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            text-align: center;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        .plan-btn:hover {
+            background: var(--primary-hover);
+        }
+        .plan-btn.disabled {
+            background: var(--dark-gray);
+            cursor: not-allowed;
+        }
+        .benefits-section {
+            background: var(--light-gray);
+            padding: 50px;
+            border-radius: 16px;
+            margin-top: 50px;
+        }
+        .benefits-section h2 {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+        .benefit-item {
+            text-align: center;
+        }
+        .benefit-item i {
+            font-size: 40px;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        .benefit-item h4 {
+            margin-bottom: 10px;
+        }
+        .benefit-item p {
+            color: var(--dark-gray);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'membership' }) %>
+
+    <div class="membership-container">
+        <div class="membership-header">
+            <h1><i class="fas fa-crown"></i> HB Mart Membership</h1>
+            <p>Subscribe to unlock exclusive vouchers and save on every order!</p>
+        </div>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+        <% if (messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error"><%= messages.error[0] %></div>
+        <% } %>
+
+        <% if (activeMembership) { %>
+            <div class="active-membership-banner">
+                <div>
+                    <h3><i class="fas fa-check-circle"></i> You are a <%= activeMembership.plan_name %> Member!</h3>
+                    <p class="expires">Expires: <%= new Date(activeMembership.expires_at).toLocaleDateString('en-SG', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+                </div>
+                <a href="/membership/my" class="btn" style="background: white; color: #667eea;">
+                    <i class="fas fa-ticket-alt"></i> View My Vouchers
+                </a>
+            </div>
+        <% } %>
+
+        <div class="plans-grid">
+            <% plans.forEach((plan, index) => { %>
+                <div class="plan-card <%= index === 1 ? 'featured' : '' %>">
+                    <div class="plan-name"><%= plan.name %></div>
+                    <div class="plan-price">$<%= parseFloat(plan.price).toFixed(2) %> <span>SGD</span></div>
+                    <div class="plan-duration"><%= plan.duration_days %> days membership</div>
+
+                    <ul class="plan-features">
+                        <li>
+                            <i class="fas fa-check"></i>
+                            <span><strong><%= plan.voucher_count %></strong> x <%= plan.voucher_type === 'percentage' ? plan.voucher_value + '% off' : '$' + plan.voucher_value + ' off' %> vouchers</span>
+                        </li>
+                        <% if (plan.voucher_min_order > 0) { %>
+                            <li>
+                                <i class="fas fa-info-circle"></i>
+                                <span>Min. order $<%= parseFloat(plan.voucher_min_order).toFixed(2) %></span>
+                            </li>
+                        <% } %>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            <span>Valid for <%= plan.duration_days %> days</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            <span>Instant activation</span>
+                        </li>
+                    </ul>
+
+                    <% if (plan.description) { %>
+                        <p style="font-size: 13px; color: var(--dark-gray); margin-bottom: 20px;"><%= plan.description %></p>
+                    <% } %>
+
+                    <% if (activeMembership && activeMembership.plan_id === plan.id) { %>
+                        <button class="plan-btn disabled" disabled>Current Plan</button>
+                    <% } else { %>
+                        <a href="/membership/subscribe/<%= plan.id %>" class="plan-btn">
+                            <i class="fas fa-bolt"></i> Subscribe Now
+                        </a>
+                    <% } %>
+                </div>
+            <% }); %>
+        </div>
+
+        <div class="benefits-section">
+            <h2><i class="fas fa-star"></i> Member Benefits</h2>
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <i class="fas fa-tags"></i>
+                    <h4>Exclusive Discounts</h4>
+                    <p>Get vouchers immediately after subscribing</p>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-bolt"></i>
+                    <h4>Instant Activation</h4>
+                    <p>Start using your vouchers right away</p>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-sync"></i>
+                    <h4>Flexible Plans</h4>
+                    <p>Choose a plan that suits your needs</p>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-percent"></i>
+                    <h4>Stack Savings</h4>
+                    <p>Use vouchers with ongoing promotions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+    <script src="/js/main.js"></script>
+</body>
+</html>

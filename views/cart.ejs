@@ -83,6 +83,56 @@
             margin-bottom: 20px;
         }
 
+        /* Voucher styles */
+        .voucher-section {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .voucher-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        .voucher-input-group input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 6px;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .voucher-applied {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #d4edda;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .voucher-applied .voucher-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .voucher-applied .voucher-code {
+            font-family: monospace;
+            font-weight: bold;
+            background: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+        .voucher-error {
+            color: #dc3545;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .discount-row {
+            color: #28a745;
+        }
+
         /* ✅ 新增：数量控件样式 */
         .quantity-form {
             display: inline-flex;
@@ -182,34 +232,65 @@
             <!-- Cart Summary -->
             <div class="cart-summary">
                 <h3 style="margin-bottom: 20px;">Order Summary</h3>
-                
+
+                <!-- Voucher Section -->
+                <div class="voucher-section" style="background: white; margin-bottom: 20px; padding: 15px;">
+                    <h4 style="margin-bottom: 12px;"><i class="fas fa-ticket-alt"></i> Have a voucher?</h4>
+                    <div class="voucher-input-group">
+                        <input type="text" id="voucherCode" placeholder="Enter voucher code" maxlength="20">
+                        <button type="button" class="btn" id="applyVoucherBtn" onclick="applyVoucher()">Apply</button>
+                    </div>
+                    <div id="voucherError" class="voucher-error" style="display: none;"></div>
+                    <div id="voucherApplied" class="voucher-applied" style="display: none;">
+                        <div class="voucher-info">
+                            <i class="fas fa-check-circle" style="color: #28a745;"></i>
+                            <span>Voucher applied:</span>
+                            <span class="voucher-code" id="appliedVoucherCode"></span>
+                        </div>
+                        <button type="button" class="btn btn-sm" style="background: #dc3545;" onclick="removeVoucher()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <a href="/vouchers" style="font-size: 13px; color: var(--primary);">
+                            <i class="fas fa-ticket-alt"></i> View my vouchers
+                        </a>
+                    </div>
+                </div>
+
                 <div class="summary-row">
                     <span>Subtotal:</span>
-                    <span>$<%= total.toFixed(2) %></span>
+                    <span id="subtotalDisplay">$<%= total.toFixed(2) %></span>
                 </div>
-                
+
                 <div class="summary-row">
                     <span>Delivery Fee:</span>
-                    <span><%= total >= 60 ? 'FREE' : '$5.00' %></span>
+                    <span id="deliveryDisplay"><%= total >= 60 ? 'FREE' : '$5.00' %></span>
                 </div>
-                
+
+                <div class="summary-row discount-row" id="discountRow" style="display: none;">
+                    <span><i class="fas fa-tag"></i> Voucher Discount:</span>
+                    <span id="discountDisplay">-$0.00</span>
+                </div>
+
                 <% if (total < 60) { %>
                     <div class="summary-row" style="color: var(--dark-gray); font-size: 14px;">
                         <span><i class="fas fa-info-circle"></i> Add $<%= (60 - total).toFixed(2) %> more for free delivery</span>
                         <span></span>
                     </div>
                 <% } %>
-                
+
                 <div class="summary-row summary-total">
                     <span>Total:</span>
-                    <span>$<%= (total + (total >= 60 ? 0 : 5)).toFixed(2) %></span>
+                    <span id="totalDisplay">$<%= (total + (total >= 60 ? 0 : 5)).toFixed(2) %></span>
                 </div>
-                
+
                 <div style="display: flex; gap: 15px; margin-top: 25px;">
                     <a href="/shopping" class="btn btn-secondary" style="flex: 1;">
                         <i class="fas fa-arrow-left"></i> Continue Shopping
                     </a>
-                    <form action="/checkout" method="POST" style="flex: 1; margin: 0;">
+                    <form action="/checkout" method="POST" style="flex: 1; margin: 0;" id="checkoutForm">
+                        <input type="hidden" name="voucherCode" id="checkoutVoucherCode" value="">
                         <button type="submit" class="btn" style="width: 100%;height: 49.6px;">
                             <i class="fas fa-credit-card"></i> Proceed to Checkout
                         </button>
@@ -235,5 +316,94 @@
     <%- include('partials/footer', { user: user }) %>
     
     <script src="/js/main.js"></script>
+    <script>
+        // Voucher handling
+        const subtotal = <%= typeof total !== 'undefined' ? total : 0 %>;
+        const deliveryFee = subtotal >= 60 ? 0 : 5;
+        let appliedVoucher = null;
+        let discount = 0;
+
+        async function applyVoucher() {
+            const code = document.getElementById('voucherCode').value.trim().toUpperCase();
+            const errorEl = document.getElementById('voucherError');
+            const appliedEl = document.getElementById('voucherApplied');
+
+            if (!code) {
+                errorEl.textContent = 'Please enter a voucher code';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('/voucher/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code, orderTotal: subtotal })
+                });
+                const data = await response.json();
+
+                if (!data.ok) {
+                    errorEl.textContent = data.error || 'Invalid voucher';
+                    errorEl.style.display = 'block';
+                    appliedEl.style.display = 'none';
+                    return;
+                }
+
+                // Success
+                appliedVoucher = data.voucher;
+                discount = data.discount;
+
+                errorEl.style.display = 'none';
+                document.getElementById('appliedVoucherCode').textContent = data.voucher.code;
+                appliedEl.style.display = 'flex';
+                document.getElementById('voucherCode').disabled = true;
+                document.getElementById('applyVoucherBtn').disabled = true;
+                document.getElementById('checkoutVoucherCode').value = data.voucher.code;
+
+                updateTotals();
+            } catch (e) {
+                errorEl.textContent = 'Error validating voucher';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        function removeVoucher() {
+            appliedVoucher = null;
+            discount = 0;
+
+            document.getElementById('voucherError').style.display = 'none';
+            document.getElementById('voucherApplied').style.display = 'none';
+            document.getElementById('voucherCode').disabled = false;
+            document.getElementById('voucherCode').value = '';
+            document.getElementById('applyVoucherBtn').disabled = false;
+            document.getElementById('checkoutVoucherCode').value = '';
+
+            updateTotals();
+        }
+
+        function updateTotals() {
+            const discountRow = document.getElementById('discountRow');
+            const discountDisplay = document.getElementById('discountDisplay');
+            const totalDisplay = document.getElementById('totalDisplay');
+
+            if (discount > 0) {
+                discountRow.style.display = 'flex';
+                discountDisplay.textContent = '-$' + discount.toFixed(2);
+            } else {
+                discountRow.style.display = 'none';
+            }
+
+            const finalTotal = subtotal + deliveryFee - discount;
+            totalDisplay.textContent = '$' + Math.max(0, finalTotal).toFixed(2);
+        }
+
+        // Allow Enter key to apply voucher
+        document.getElementById('voucherCode')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyVoucher();
+            }
+        });
+    </script>
 </body>
 </html>

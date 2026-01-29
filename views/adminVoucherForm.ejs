@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Voucher - HB Mart Admin</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .form-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 35px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .help-text {
+            font-size: 12px;
+            color: var(--dark-gray);
+            margin-top: 5px;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'admin' }) %>
+
+    <div class="form-container">
+        <div style="margin-bottom: 20px;">
+            <a href="/admin/vouchers" style="color: var(--primary); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Back to Vouchers
+            </a>
+        </div>
+
+        <div class="form-card">
+            <h2 style="margin-bottom: 25px;">
+                <i class="fas fa-ticket-alt"></i> Create Promotional Voucher
+            </h2>
+
+            <% if (messages.error && messages.error.length > 0) { %>
+                <div class="alert alert-error"><%= messages.error[0] %></div>
+            <% } %>
+
+            <form action="/admin/vouchers/create" method="POST">
+                <div class="form-group">
+                    <label for="code">Voucher Code</label>
+                    <input type="text" id="code" name="code" placeholder="Leave empty to auto-generate" style="text-transform: uppercase;">
+                    <p class="help-text">e.g., SAVE10, WELCOME20</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="type">Discount Type *</label>
+                        <select id="type" name="type" required>
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="fixed">Fixed Amount ($)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="value">Discount Value *</label>
+                        <input type="number" id="value" name="value" step="0.01" min="0" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="min_order">Min. Order Amount ($)</label>
+                        <input type="number" id="min_order" name="min_order" step="0.01" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="max_discount">Max Discount ($)</label>
+                        <input type="number" id="max_discount" name="max_discount" step="0.01" min="0" placeholder="For percentage type">
+                        <p class="help-text">Only for percentage type</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="user_id">Assign to User (optional)</label>
+                    <input type="number" id="user_id" name="user_id" placeholder="User ID (leave empty for public voucher)">
+                    <p class="help-text">Leave empty to create a public voucher anyone can use</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="expires_at">Expiry Date</label>
+                    <input type="date" id="expires_at" name="expires_at">
+                    <p class="help-text">Leave empty for no expiry</p>
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-save"></i> Create Voucher
+                    </button>
+                    <a href="/admin/vouchers" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

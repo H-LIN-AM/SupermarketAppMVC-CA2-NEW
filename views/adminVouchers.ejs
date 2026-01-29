@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Vouchers - HB Mart Admin</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .data-table th {
+            background: var(--light-gray);
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .data-table td {
+            font-size: 13px;
+        }
+        .voucher-code {
+            font-family: monospace;
+            font-weight: bold;
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .status-badge.active { background: #d4edda; color: #155724; }
+        .status-badge.used { background: #e2e3e5; color: #383d41; }
+        .status-badge.expired { background: #f8d7da; color: #721c24; }
+        .type-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .type-badge.percentage { background: #d4edda; color: #155724; }
+        .type-badge.fixed { background: #fff3cd; color: #856404; }
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'admin' }) %>
+
+    <div class="admin-container">
+        <div class="header-row">
+            <h1><i class="fas fa-ticket-alt"></i> All Vouchers</h1>
+            <a href="/admin/vouchers/create" class="btn">
+                <i class="fas fa-plus"></i> Create Promo Voucher
+            </a>
+        </div>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+        <% if (messages.error && messages.error.length > 0) { %>
+            <div class="alert alert-error"><%= messages.error[0] %></div>
+        <% } %>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Min Order</th>
+                    <th>User</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Expires</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (vouchers.length > 0) { %>
+                    <%
+                        const now = new Date();
+                        vouchers.forEach(v => {
+                            let status = 'active';
+                            if (v.is_used) status = 'used';
+                            else if (v.expires_at && new Date(v.expires_at) < now) status = 'expired';
+                    %>
+                        <tr>
+                            <td><span class="voucher-code"><%= v.code %></span></td>
+                            <td>
+                                <span class="type-badge <%= v.type %>">
+                                    <%= v.type === 'percentage' ? '%' : '$' %>
+                                </span>
+                            </td>
+                            <td>
+                                <%= v.type === 'percentage' ? v.value + '%' : '$' + parseFloat(v.value).toFixed(2) %>
+                            </td>
+                            <td>$<%= parseFloat(v.min_order || 0).toFixed(2) %></td>
+                            <td>
+                                <% if (v.username) { %>
+                                    <%= v.username %><br>
+                                    <small><%= v.email %></small>
+                                <% } else { %>
+                                    <em>Public</em>
+                                <% } %>
+                            </td>
+                            <td><%= v.source %></td>
+                            <td>
+                                <span class="status-badge <%= status %>">
+                                    <%= status.charAt(0).toUpperCase() + status.slice(1) %>
+                                </span>
+                            </td>
+                            <td>
+                                <% if (v.expires_at) { %>
+                                    <%= new Date(v.expires_at).toLocaleDateString('en-SG') %>
+                                <% } else { %>
+                                    -
+                                <% } %>
+                            </td>
+                            <td><%= new Date(v.created_at).toLocaleDateString('en-SG') %></td>
+                            <td>
+                                <a href="/admin/vouchers/delete/<%= v.id %>" class="btn btn-delete"
+                                   onclick="return confirm('Delete this voucher?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 40px;">
+                            No vouchers found.
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

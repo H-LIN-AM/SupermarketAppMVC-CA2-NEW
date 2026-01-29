@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Shipment - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- [NEW FILE] Created for order shipment tracking -->
+    <style>
+        .shipment-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .shipment-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .status-badge.processing { background: #fff3cd; color: #856404; }
+        .status-badge.shipped { background: #cfe2ff; color: #084298; }
+        .status-badge.delivered { background: #198754; color: white; }
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+            margin-top: 20px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--light-gray);
+        }
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        .no-shipment {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--dark-gray);
+        }
+        .no-shipment i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'orders' }) %>
+
+    <div class="shipment-container">
+        <div style="margin-bottom: 20px;">
+            <a href="/order/<%= order.id %>" style="color: var(--primary); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Back to Order #<%= order.id %>
+            </a>
+        </div>
+
+        <h1 style="margin-bottom: 30px;">
+            <i class="fas fa-truck"></i> Shipment for Order #<%= order.id %>
+        </h1>
+
+        <% if (shipment) { %>
+            <div class="shipment-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <div style="font-size: 12px; color: var(--dark-gray);">Tracking Number</div>
+                        <div style="font-family: monospace; font-size: 20px; font-weight: bold; color: var(--primary);">
+                            <%= shipment.tracking_number %>
+                        </div>
+                    </div>
+                    <span class="status-badge <%= shipment.status.toLowerCase().replace(/ /g, '-') %>">
+                        <%= shipment.status %>
+                    </span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <div style="font-size: 12px; color: var(--dark-gray);">Carrier</div>
+                        <div><%= shipment.carrier %></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--dark-gray);">Recipient</div>
+                        <div><%= shipment.recipient_name %></div>
+                    </div>
+                    <% if (shipment.shipped_at) { %>
+                        <div>
+                            <div style="font-size: 12px; color: var(--dark-gray);">Shipped</div>
+                            <div><%= new Date(shipment.shipped_at).toLocaleDateString('en-SG') %></div>
+                        </div>
+                    <% } %>
+                </div>
+
+                <h4><i class="fas fa-history"></i> Tracking Updates</h4>
+                <% if (tracking && tracking.length > 0) { %>
+                    <div class="timeline">
+                        <% tracking.forEach(item => { %>
+                            <div class="timeline-item">
+                                <div style="font-weight: 600;"><%= item.status %></div>
+                                <div style="color: var(--dark-gray); font-size: 14px;">
+                                    <% if (item.location) { %><%= item.location %> - <% } %>
+                                    <%= item.description %>
+                                </div>
+                                <div style="font-size: 12px; color: var(--dark-gray); margin-top: 3px;">
+                                    <%= new Date(item.created_at).toLocaleString('en-SG') %>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <p style="color: var(--dark-gray); margin-top: 15px;">No tracking updates yet.</p>
+                <% } %>
+            </div>
+        <% } else { %>
+            <div class="shipment-card">
+                <div class="no-shipment">
+                    <i class="fas fa-box"></i>
+                    <h3>Shipment Not Yet Created</h3>
+                    <p>Your order is being processed. Shipment information will appear here once your order is shipped.</p>
+                </div>
+            </div>
+        <% } %>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+</body>
+</html>

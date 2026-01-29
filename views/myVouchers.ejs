@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Vouchers - HB Mart</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .vouchers-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 10px;
+        }
+        .tab {
+            padding: 10px 25px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--dark-gray);
+            background: transparent;
+            border: none;
+            transition: all 0.3s;
+        }
+        .tab:hover { color: var(--primary); }
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .vouchers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        .voucher-card {
+            background: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            position: relative;
+            transition: transform 0.3s;
+        }
+        .voucher-card:hover { transform: translateY(-3px); }
+        .voucher-card.used, .voucher-card.expired { opacity: 0.6; }
+        .voucher-ribbon {
+            position: absolute;
+            top: 15px;
+            right: -35px;
+            background: #28a745;
+            color: white;
+            padding: 5px 40px;
+            font-size: 11px;
+            font-weight: bold;
+            transform: rotate(45deg);
+            text-transform: uppercase;
+        }
+        .voucher-ribbon.used { background: #6c757d; }
+        .voucher-ribbon.expired { background: #dc3545; }
+        .voucher-header {
+            padding: 25px;
+            text-align: center;
+            color: white;
+        }
+        .voucher-header.percentage { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+        .voucher-header.fixed { background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%); }
+        .voucher-header.used, .voucher-header.expired { background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%); }
+        .voucher-value {
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .voucher-type { font-size: 14px; opacity: 0.9; }
+        .voucher-body {
+            padding: 20px;
+        }
+        .voucher-code-box {
+            display: flex;
+            align-items: center;
+            background: var(--light-gray);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        .voucher-code-box code {
+            flex: 1;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        .copy-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-btn:hover { background: var(--primary-hover); }
+        .voucher-info {
+            font-size: 13px;
+            color: var(--dark-gray);
+        }
+        .voucher-info p {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .voucher-info i { width: 16px; color: var(--primary); }
+        .used-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--dark-gray);
+        }
+        .empty-state i {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            background: var(--white);
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+            min-width: 150px;
+        }
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .stat-card .label {
+            font-size: 13px;
+            color: var(--dark-gray);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar', { user: user, currentPage: 'vouchers' }) %>
+
+    <div class="vouchers-container">
+        <h1 style="margin-bottom: 30px;"><i class="fas fa-ticket-alt"></i> My Vouchers</h1>
+
+        <% if (messages.success && messages.success.length > 0) { %>
+            <div class="alert alert-success"><%= messages.success[0] %></div>
+        <% } %>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="number"><%= activeVouchers.length %></div>
+                <div class="label">Available</div>
+            </div>
+            <div class="stat-card">
+                <div class="number"><%= usedVouchers.length %></div>
+                <div class="label">Used</div>
+            </div>
+            <div class="stat-card">
+                <div class="number"><%= expiredVouchers.length %></div>
+                <div class="label">Expired</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('active')">
+                <i class="fas fa-check-circle"></i> Available (<%= activeVouchers.length %>)
+            </button>
+            <button class="tab" onclick="showTab('used')">
+                <i class="fas fa-receipt"></i> Used (<%= usedVouchers.length %>)
+            </button>
+            <button class="tab" onclick="showTab('expired')">
+                <i class="fas fa-clock"></i> Expired (<%= expiredVouchers.length %>)
+            </button>
+        </div>
+
+        <!-- Active Vouchers -->
+        <div id="tab-active" class="tab-content active">
+            <% if (activeVouchers.length > 0) { %>
+                <div class="vouchers-grid">
+                    <% activeVouchers.forEach(voucher => { %>
+                        <div class="voucher-card">
+                            <div class="voucher-ribbon">Active</div>
+                            <div class="voucher-header <%= voucher.type %>">
+                                <div class="voucher-value">
+                                    <% if (voucher.type === 'percentage') { %>
+                                        <%= voucher.value %>%
+                                    <% } else { %>
+                                        $<%= parseFloat(voucher.value).toFixed(2) %>
+                                    <% } %>
+                                </div>
+                                <div class="voucher-type">
+                                    <%= voucher.type === 'percentage' ? 'Percentage Off' : 'Fixed Amount Off' %>
+                                </div>
+                            </div>
+                            <div class="voucher-body">
+                                <div class="voucher-code-box">
+                                    <code><%= voucher.code %></code>
+                                    <button class="copy-btn" onclick="copyCode('<%= voucher.code %>')">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                <div class="voucher-info">
+                                    <% if (voucher.min_order > 0) { %>
+                                        <p><i class="fas fa-shopping-cart"></i> Min. order: $<%= parseFloat(voucher.min_order).toFixed(2) %></p>
+                                    <% } else { %>
+                                        <p><i class="fas fa-shopping-cart"></i> No minimum order</p>
+                                    <% } %>
+                                    <% if (voucher.expires_at) { %>
+                                        <p><i class="fas fa-calendar"></i> Expires: <%= new Date(voucher.expires_at).toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' }) %></p>
+                                    <% } else { %>
+                                        <p><i class="fas fa-infinity"></i> No expiry</p>
+                                    <% } %>
+                                    <p><i class="fas fa-tag"></i> Source: <%= voucher.source === 'membership' ? 'Membership' : 'Promotion' %></p>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="empty-state">
+                    <i class="fas fa-ticket-alt"></i>
+                    <h3>No available vouchers</h3>
+                    <p>Subscribe to a membership to get vouchers!</p>
+                    <a href="/membership" class="btn" style="margin-top: 20px;">
+                        <i class="fas fa-crown"></i> Get Membership
+                    </a>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Used Vouchers -->
+        <div id="tab-used" class="tab-content">
+            <% if (usedVouchers.length > 0) { %>
+                <div class="vouchers-grid">
+                    <% usedVouchers.forEach(voucher => { %>
+                        <div class="voucher-card used">
+                            <div class="voucher-ribbon used">Used</div>
+                            <div class="voucher-header used">
+                                <div class="voucher-value">
+                                    <% if (voucher.type === 'percentage') { %>
+                                        <%= voucher.value %>%
+                                    <% } else { %>
+                                        $<%= parseFloat(voucher.value).toFixed(2) %>
+                                    <% } %>
+                                </div>
+                                <div class="voucher-type">Used</div>
+                            </div>
+                            <div class="voucher-body">
+                                <div class="voucher-code-box">
+                                    <code style="color: #6c757d;"><%= voucher.code %></code>
+                                </div>
+                                <div class="used-info">
+                                    <p><i class="fas fa-check"></i> Used on <%= new Date(voucher.used_at).toLocaleDateString('en-SG') %></p>
+                                    <% if (voucher.order_id) { %>
+                                        <p><a href="/order/<%= voucher.order_id %>">View Order #<%= voucher.order_id %></a></p>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="empty-state">
+                    <i class="fas fa-receipt"></i>
+                    <h3>No used vouchers</h3>
+                    <p>Your used vouchers will appear here</p>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Expired Vouchers -->
+        <div id="tab-expired" class="tab-content">
+            <% if (expiredVouchers.length > 0) { %>
+                <div class="vouchers-grid">
+                    <% expiredVouchers.forEach(voucher => { %>
+                        <div class="voucher-card expired">
+                            <div class="voucher-ribbon expired">Expired</div>
+                            <div class="voucher-header expired">
+                                <div class="voucher-value">
+                                    <% if (voucher.type === 'percentage') { %>
+                                        <%= voucher.value %>%
+                                    <% } else { %>
+                                        $<%= parseFloat(voucher.value).toFixed(2) %>
+                                    <% } %>
+                                </div>
+                                <div class="voucher-type">Expired</div>
+                            </div>
+                            <div class="voucher-body">
+                                <div class="voucher-code-box">
+                                    <code style="color: #adb5bd;"><%= voucher.code %></code>
+                                </div>
+                                <div class="voucher-info">
+                                    <p style="color: #dc3545;"><i class="fas fa-times-circle"></i> Expired: <%= new Date(voucher.expires_at).toLocaleDateString('en-SG') %></p>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="empty-state">
+                    <i class="fas fa-clock"></i>
+                    <h3>No expired vouchers</h3>
+                    <p>Good news! You haven't let any vouchers expire</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <%- include('partials/footer', { user: user }) %>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            // Show selected tab
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+        }
+
+        function copyCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Voucher code copied: ' + code);
+            }).catch(() => {
+                // Fallback
+                const input = document.createElement('input');
+                input.value = code;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                alert('Voucher code copied: ' + code);
+            });
+        }
+    </script>
+</body>
+</html>
